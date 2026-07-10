@@ -1,0 +1,1745 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metal Print Finance | ERP de Comunicação Visual</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- CSS Link -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Lucide Icons (Web component version handles dynamically) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="light-mode">
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-container">
+                    <div class="logo-icon">
+                        <i data-lucide="layers"></i>
+                    </div>
+                    <div class="logo-text">
+                        <span class="logo-title">Metal Print</span>
+                        <span class="logo-subtitle">Finance</span>
+                    </div>
+                </div>
+                <button class="sidebar-toggle-btn mobile-only" id="sidebar-close-btn">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <div class="sidebar-company">
+                <div class="company-logo">MP</div>
+                <div class="company-info">
+                    <span class="company-name" id="display-company-name">Metal Print CV</span>
+                    <span class="company-role">Administrador</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <span class="nav-section-title">Visão Geral</span>
+                    <a href="#" class="nav-item active" data-tab="dashboard">
+                        <i data-lucide="layout-dashboard"></i> Dashboard
+                    </a>
+                    <a href="#" class="nav-item" data-tab="indicadores">
+                        <i data-lucide="bar-chart-3"></i> Indicadores
+                    </a>
+                    <a href="#" class="nav-item" data-tab="metas">
+                        <i data-lucide="target"></i> Metas
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <span class="nav-section-title">Financeiro</span>
+                    <a href="#" class="nav-item" data-tab="financeiro">
+                        <i data-lucide="wallet"></i> Financeiro
+                    </a>
+                    <a href="#" class="nav-item" data-tab="fluxo-caixa">
+                        <i data-lucide="line-chart"></i> Fluxo de Caixa
+                    </a>
+                    <a href="#" class="nav-item" data-tab="receitas">
+                        <i data-lucide="trending-up"></i> Receitas
+                    </a>
+                    <a href="#" class="nav-item" data-tab="despesas">
+                        <i data-lucide="trending-down"></i> Despesas
+                    </a>
+                    <a href="#" class="nav-item" data-tab="contas-pagar">
+                        <i data-lucide="calendar-clock"></i> Contas a Pagar
+                        <span class="badge badge-danger" id="badge-contas-pagar">0</span>
+                    </a>
+                    <a href="#" class="nav-item" data-tab="contas-receber">
+                        <i data-lucide="calendar-check"></i> Contas a Receber
+                        <span class="badge badge-success" id="badge-contas-receber">0</span>
+                    </a>
+                    <a href="#" class="nav-item" data-tab="relatorios">
+                        <i data-lucide="file-text"></i> Relatórios
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <span class="nav-section-title">Operacional</span>
+                    <a href="#" class="nav-item" data-tab="ordens-servico">
+                        <i data-lucide="clipboard-list"></i> Ordens de Serviço
+                        <span class="badge badge-info" id="badge-ordens-producao">0</span>
+                    </a>
+                    <a href="#" class="nav-item" data-tab="orçamentos">
+                        <i data-lucide="calculator"></i> Orçamentos
+                    </a>
+                    <a href="#" class="nav-item" data-tab="producao">
+                        <i data-lucide="factory"></i> Produção
+                    </a>
+                    <a href="#" class="nav-item" data-tab="agenda">
+                        <i data-lucide="calendar"></i> Agenda
+                    </a>
+                    <a href="#" class="nav-item" data-tab="estoque">
+                        <i data-lucide="package-search"></i> Estoque
+                    </a>
+                    <a href="#" class="nav-item" data-tab="materiais">
+                        <i data-lucide="boxes"></i> Materiais
+                    </a>
+                    <a href="#" class="nav-item" data-tab="produtos">
+                        <i data-lucide="box"></i> Produtos
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <span class="nav-section-title">Cadastros</span>
+                    <a href="#" class="nav-item" data-tab="clientes">
+                        <i data-lucide="users"></i> Clientes
+                    </a>
+                    <a href="#" class="nav-item" data-tab="fornecedores">
+                        <i data-lucide="truck"></i> Fornecedores
+                    </a>
+                    <a href="#" class="nav-item" data-tab="funcionarios">
+                        <i data-lucide="user-cog"></i> Funcionários
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <span class="nav-section-title">Ferramentas</span>
+                    <a href="#" class="nav-item" data-tab="calculadora">
+                        <i data-lucide="percent"></i> Calculadora Visual
+                    </a>
+                    <a href="#" class="nav-item" data-tab="configuracoes">
+                        <i data-lucide="settings"></i> Configurações
+                    </a>
+                    <a href="#" class="nav-item" data-tab="ajuda">
+                        <i data-lucide="help-circle"></i> Ajuda
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button class="theme-toggle" id="theme-toggle-btn">
+                    <i data-lucide="moon" class="dark-icon"></i>
+                    <i data-lucide="sun" class="light-icon"></i>
+                    <span id="theme-text">Modo Escuro</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN APP WRAPPER -->
+        <div class="main-wrapper">
+            <!-- HEADER -->
+            <header class="main-header">
+                <div class="header-left">
+                    <button class="hamburger-btn mobile-only" id="hamburger-btn">
+                        <i data-lucide="menu"></i>
+                    </button>
+                    <h1 class="header-title" id="page-title">Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <!-- Firebase connection state indicator -->
+                    <div class="firebase-status-badge" id="firebase-status" title="Status de Sincronização Firebase">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Conectando...</span>
+                    </div>
+
+                    <!-- Quick Action Button -->
+                    <div class="dropdown">
+                        <button class="btn btn-primary btn-icon-text" id="quick-action-btn">
+                            <i data-lucide="plus"></i> Novo <i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i>
+                        </button>
+                        <div class="dropdown-content" id="quick-action-dropdown">
+                            <a href="#" id="qa-new-os"><i data-lucide="clipboard-list"></i> Ordem de Serviço</a>
+                            <a href="#" id="qa-new-budget"><i data-lucide="calculator"></i> Orçamento</a>
+                            <a href="#" id="qa-new-transaction"><i data-lucide="dollar-sign"></i> Transação</a>
+                            <a href="#" id="qa-new-client"><i data-lucide="user-plus"></i> Cliente</a>
+                            <a href="#" id="qa-new-material"><i data-lucide="package"></i> Material</a>
+                        </div>
+                    </div>
+
+                    <div class="user-avatar" id="user-profile-trigger">
+                        <span>MP</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- MAIN CONTENT AREA -->
+            <main class="main-content" id="main-content">
+
+                <!-- 1. DASHBOARD VIEW -->
+                <section id="view-dashboard" class="view-section active">
+                    <!-- Dashboard Statistics Grid -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Saldo Atual</span>
+                                <div class="stat-icon icon-blue"><i data-lucide="wallet"></i></div>
+                            </div>
+                            <div class="stat-value" id="dash-saldo">R$ 0,00</div>
+                            <div class="stat-footer">
+                                <span class="trend-up"><i data-lucide="arrow-up-right"></i> +4.2%</span> em relação ao mês anterior
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Lucro Hoje</span>
+                                <div class="stat-icon icon-green"><i data-lucide="dollar-sign"></i></div>
+                            </div>
+                            <div class="stat-value" id="dash-lucro-hoje">R$ 0,00</div>
+                            <div class="stat-footer">
+                                <span class="trend-neutral" id="dash-lucro-hoje-desc">Dados atualizados hoje</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Lucro da Semana</span>
+                                <div class="stat-icon icon-green"><i data-lucide="calendar"></i></div>
+                            </div>
+                            <div class="stat-value" id="dash-lucro-semana">R$ 0,00</div>
+                            <div class="stat-footer">
+                                <span class="trend-up" id="dash-lucro-semana-desc">Semana atual</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Lucro do Mês</span>
+                                <div class="stat-icon icon-green"><i data-lucide="trending-up"></i></div>
+                            </div>
+                            <div class="stat-value" id="dash-lucro-mes">R$ 0,00</div>
+                            <div class="stat-footer">
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar-fill" id="meta-mes-progresso" style="width: 0%"></div>
+                                </div>
+                                <span class="trend-subtext" id="meta-mes-texto">Meta: R$ 0,00 (0%)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Production & Ops Stats Row -->
+                    <div class="stats-grid-small mt-4">
+                        <div class="mini-stat-card">
+                            <span class="mini-title">Ordens em Produção</span>
+                            <span class="mini-value" id="dash-os-producao">0</span>
+                        </div>
+                        <div class="mini-stat-card">
+                            <span class="mini-title">Ordens Pendentes</span>
+                            <span class="mini-value text-warning" id="dash-os-pendente">0</span>
+                        </div>
+                        <div class="mini-stat-card">
+                            <span class="mini-title">Ordens Entregues (Mês)</span>
+                            <span class="mini-value text-success" id="dash-os-entregue">0</span>
+                        </div>
+                        <div class="mini-stat-card">
+                            <span class="mini-title">Clientes Ativos</span>
+                            <span class="mini-value" id="dash-clientes-ativos">0</span>
+                        </div>
+                        <div class="mini-stat-card">
+                            <span class="mini-title">Ticket Médio (OS)</span>
+                            <span class="mini-value" id="dash-ticket-medio">R$ 0,00</span>
+                        </div>
+                        <div class="mini-stat-card text-danger-card" id="alert-estoque-baixo-trigger">
+                            <span class="mini-title">Materiais Acabando</span>
+                            <span class="mini-value text-danger" id="dash-materiais-alerta">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Charts & Lists Row -->
+                    <div class="dashboard-row mt-4">
+                        <div class="card flex-2">
+                            <div class="card-header">
+                                <h3 class="card-title">Fluxo de Caixa (Mensal)</h3>
+                                <div class="card-actions">
+                                    <span class="legend-dot bg-success"></span> Receitas
+                                    <span class="legend-dot bg-danger ml-2"></span> Despesas
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="chart-fluxo-caixa"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="card flex-1">
+                            <div class="card-header">
+                                <h3 class="card-title">Mais Vendidos / Produzidos</h3>
+                            </div>
+                            <div class="list-wrapper" id="dash-produtos-populares">
+                                <div class="empty-state">Sem dados disponíveis.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Partners and AI Card -->
+                    <div class="dashboard-row mt-4">
+                        <div class="card flex-1">
+                            <div class="card-header">
+                                <h3 class="card-title">Maiores Parceiros</h3>
+                            </div>
+                            <div class="details-list">
+                                <div class="details-item">
+                                    <span class="item-label">Maior Cliente:</span>
+                                    <span class="item-value" id="dash-maior-cliente">-</span>
+                                </div>
+                                <div class="details-item">
+                                    <span class="item-label">Maior Fornecedor:</span>
+                                    <span class="item-value" id="dash-maior-fornecedor">-</span>
+                                </div>
+                                <div class="details-item">
+                                    <span class="item-label">Tempo Médio de Produção:</span>
+                                    <span class="item-value" id="dash-tempo-medio-producao">0.0 dias</span>
+                                </div>
+                                <div class="details-item">
+                                    <span class="item-label">Meta Anual:</span>
+                                    <span class="item-value" id="dash-meta-anual">R$ 0,00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card flex-2 ai-dash-card">
+                            <div class="card-header ai-header">
+                                <h3 class="card-title text-white"><i data-lucide="sparkles"></i> Assistente IA Metal Print</h3>
+                                <span class="ai-badge">Online</span>
+                            </div>
+                            <div class="ai-card-body">
+                                <p class="text-secondary text-sm">Olá! Sou o assistente financeiro do seu ERP. Analiso suas vendas, ordens e estoque para te dar respostas imediatas.</p>
+                                <div class="ai-suggestions">
+                                    <button class="ai-suggest-btn">Qual cliente gera mais lucro?</button>
+                                    <button class="ai-suggest-btn">Qual material mais utilizo?</button>
+                                    <button class="ai-suggest-btn">Quanto posso gastar hoje?</button>
+                                    <button class="ai-suggest-btn">Quais ordens estão atrasadas?</button>
+                                </div>
+                                <div class="ai-input-row">
+                                    <input type="text" id="ai-dash-input" placeholder="Pergunte-me qualquer detalhe financeiro ou operacional..." />
+                                    <button class="btn btn-icon btn-primary" id="ai-dash-send"><i data-lucide="send"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. FINANCEIRO VIEW -->
+                <section id="view-financeiro" class="view-section">
+                    <div class="action-bar">
+                        <div class="filters">
+                            <input type="date" id="fin-filter-inicio" class="form-control">
+                            <input type="date" id="fin-filter-fim" class="form-control">
+                            <select id="fin-filter-tipo" class="form-control">
+                                <option value="">Todos os Tipos</option>
+                                <option value="Receita">Receita</option>
+                                <option value="Despesa">Despesa</option>
+                            </select>
+                            <select id="fin-filter-categoria" class="form-control">
+                                <option value="">Categorias</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary btn-icon-text" id="btn-nova-transacao">
+                            <i data-lucide="plus"></i> Novo Lançamento
+                        </button>
+                    </div>
+
+                    <div class="stats-summary-bar mt-3">
+                        <div class="summary-box text-success-light">
+                            <span class="box-label">Receitas Filtradas</span>
+                            <span class="box-value" id="fin-soma-receitas">R$ 0,00</span>
+                        </div>
+                        <div class="summary-box text-danger-light">
+                            <span class="box-label">Despesas Filtradas</span>
+                            <span class="box-value" id="fin-soma-despesas">R$ 0,00</span>
+                        </div>
+                        <div class="summary-box">
+                            <span class="box-label">Saldo do Período</span>
+                            <span class="box-value" id="fin-saldo-periodo">R$ 0,00</span>
+                        </div>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="table-responsive">
+                            <table class="table" id="table-financeiro">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Descrição</th>
+                                        <th>Tipo</th>
+                                        <th>Categoria</th>
+                                        <th>Centro de Custo</th>
+                                        <th>Método</th>
+                                        <th>Valor</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. FLUXO DE CAIXA VIEW -->
+                <section id="view-fluxo-caixa" class="view-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Demonstrativo de Fluxo de Caixa (DFCV)</h3>
+                        </div>
+                        <div class="chart-container-large">
+                            <canvas id="chart-fluxo-caixa-detalhado"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h3 class="card-title">Resumo Financeiro Mensal</h3>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered text-center" id="table-fluxo-mensal">
+                                <thead>
+                                    <tr>
+                                        <th>Mês</th>
+                                        <th>Receita Bruta</th>
+                                        <th>Despesas Variáveis</th>
+                                        <th>Margem de Contribuição</th>
+                                        <th>Despesas Fixas</th>
+                                        <th>Lucro Líquido</th>
+                                        <th>ROI do Mês</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. RECEITAS VIEW -->
+                <section id="view-receitas" class="view-section">
+                    <div class="action-bar">
+                        <div class="filters">
+                            <input type="text" id="rec-search" class="form-control" placeholder="Buscar receita...">
+                            <select id="rec-filter-metodo" class="form-control">
+                                <option value="">Todos Métodos</option>
+                                <option value="PIX">PIX</option>
+                                <option value="Boleto">Boleto</option>
+                                <option value="Cartão">Cartão</option>
+                                <option value="Dinheiro">Dinheiro</option>
+                                <option value="Transferência">Transferência</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-success btn-icon-text" id="btn-nova-receita">
+                            <i data-lucide="plus"></i> Registrar Receita
+                        </button>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="table-responsive">
+                            <table class="table" id="table-receitas">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Cliente</th>
+                                        <th>Descrição</th>
+                                        <th>Método</th>
+                                        <th>Parcela</th>
+                                        <th>Valor</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. DESPESAS VIEW -->
+                <section id="view-despesas" class="view-section">
+                    <div class="action-bar">
+                        <div class="filters">
+                            <input type="text" id="des-search" class="form-control" placeholder="Buscar despesa...">
+                            <select id="des-filter-natureza" class="form-control">
+                                <option value="">Todas Naturezas</option>
+                                <option value="Fixa">Despesa Fixa</option>
+                                <option value="Variável">Despesa Variável</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-danger btn-icon-text" id="btn-nova-despesa">
+                            <i data-lucide="plus"></i> Registrar Despesa
+                        </button>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="table-responsive">
+                            <table class="table" id="table-despesas">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Fornecedor/Destino</th>
+                                        <th>Descrição</th>
+                                        <th>Natureza</th>
+                                        <th>Centro de Custo</th>
+                                        <th>Valor</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. CONTAS A PAGAR VIEW -->
+                <section id="view-contas-pagar" class="view-section">
+                    <div class="action-bar">
+                        <span class="text-secondary text-sm">Gerenciamento de obrigações com fornecedores, impostos e funcionários.</span>
+                        <button class="btn btn-danger btn-icon-text" id="btn-pagar-novo">
+                            <i data-lucide="plus"></i> Novo Conta a Pagar
+                        </button>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="table-responsive">
+                            <table class="table" id="table-contas-pagar">
+                                <thead>
+                                    <tr>
+                                        <th>Vencimento</th>
+                                        <th>Beneficiário</th>
+                                        <th>Descrição</th>
+                                        <th>Centro Custo</th>
+                                        <th>Valor</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 7. CONTAS A RECEBER VIEW -->
+                <section id="view-contas-receber" class="view-section">
+                    <div class="action-bar">
+                        <span class="text-secondary text-sm">Controle de faturas, parcelamentos de ordens de serviço e cobranças de clientes.</span>
+                        <button class="btn btn-success btn-icon-text" id="btn-receber-novo">
+                            <i data-lucide="plus"></i> Novo Conta a Receber
+                        </button>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="table-responsive">
+                            <table class="table" id="table-contas-receber">
+                                <thead>
+                                    <tr>
+                                        <th>Vencimento</th>
+                                        <th>Cliente</th>
+                                        <th>Descrição/OS</th>
+                                        <th>Método Sugerido</th>
+                                        <th>Valor</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 8. CLIENTES VIEW -->
+                <section id="view-clientes" class="view-section">
+                    <div class="action-bar">
+                        <input type="text" id="cli-search" class="form-control w-300" placeholder="Buscar cliente por nome ou CNPJ...">
+                        <button class="btn btn-primary btn-icon-text" id="btn-novo-cliente">
+                            <i data-lucide="user-plus"></i> Cadastrar Cliente
+                        </button>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="table-responsive">
+                            <table class="table" id="table-clientes">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Contato</th>
+                                        <th>E-mail</th>
+                                        <th>Telefone</th>
+                                        <th>Cidade/UF</th>
+                                        <th>Total Compras</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 9. FORNECEDORES VIEW -->
+                <section id="view-fornecedores" class="view-section">
+                    <div class="action-bar">
+                        <input type="text" id="for-search" class="form-control w-300" placeholder="Buscar fornecedor...">
+                        <button class="btn btn-primary btn-icon-text" id="btn-novo-fornecedor">
+                            <i data-lucide="truck"></i> Novo Fornecedor
+                        </button>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="table-responsive">
+                            <table class="table" id="table-fornecedores">
+                                <thead>
+                                    <tr>
+                                        <th>Fornecedor</th>
+                                        <th>Materiais Principais</th>
+                                        <th>Contato</th>
+                                        <th>Telefone</th>
+                                        <th>E-mail</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 10. FUNCIONÁRIOS VIEW -->
+                <section id="view-funcionarios" class="view-section">
+                    <div class="action-bar">
+                        <span class="text-secondary text-sm">Gestão de colaboradores, cargos, custos operacionais e comissão.</span>
+                        <button class="btn btn-primary btn-icon-text" id="btn-novo-funcionario">
+                            <i data-lucide="user-cog"></i> Novo Funcionário
+                        </button>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="table-responsive">
+                            <table class="table" id="table-funcionarios">
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Cargo</th>
+                                        <th>Salário Base</th>
+                                        <th>Custo Hora Est.</th>
+                                        <th>Telefone</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 11. MATERIAIS VIEW -->
+                <section id="view-materiais" class="view-section">
+                    <div class="action-bar">
+                        <span class="text-secondary text-sm">Cadastro de matérias-primas e insumos utilizados na produção.</span>
+                        <button class="btn btn-primary btn-icon-text" id="btn-novo-material">
+                            <i data-lucide="plus"></i> Novo Material
+                        </button>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="table-responsive">
+                            <table class="table" id="table-materiais">
+                                <thead>
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Material</th>
+                                        <th>Categoria</th>
+                                        <th>Unidade</th>
+                                        <th>Preço Compra (m²/un)</th>
+                                        <th>Preço Venda (Sug.)</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 12. PRODUTOS VIEW -->
+                <section id="view-produtos" class="view-section">
+                    <div class="action-bar">
+                        <span class="text-secondary text-sm">Modelos e produtos acabados recorrentes para orçamentos rápidos.</span>
+                        <button class="btn btn-primary btn-icon-text" id="btn-novo-produto">
+                            <i data-lucide="plus"></i> Novo Produto Padrão
+                        </button>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="table-responsive">
+                            <table class="table" id="table-produtos">
+                                <thead>
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Produto</th>
+                                        <th>Material Base</th>
+                                        <th>Custo Est. (m²)</th>
+                                        <th>Margem Recomendada</th>
+                                        <th>Preço Sugerido (m²)</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 13. ESTOQUE VIEW -->
+                <section id="view-estoque" class="view-section">
+                    <div class="stats-grid mb-3">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Valor Total em Estoque</span>
+                                <div class="stat-icon icon-blue"><i data-lucide="boxes"></i></div>
+                            </div>
+                            <div class="stat-value" id="est-valor-total">R$ 0,00</div>
+                            <div class="stat-footer">Custo de aquisição total</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Potencial de Venda</span>
+                                <div class="stat-icon icon-green"><i data-lucide="trending-up"></i></div>
+                            </div>
+                            <div class="stat-value" id="est-lucro-estimado">R$ 0,00</div>
+                            <div class="stat-footer">Valor bruto se tudo for vendido</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-title">Perda / Desperdício Estimado</span>
+                                <div class="stat-icon icon-red"><i data-lucide="alert-triangle"></i></div>
+                            </div>
+                            <div class="stat-value text-danger" id="est-perdas">R$ 0,00</div>
+                            <div class="stat-footer">Estimado em retalhos e erros (10%)</div>
+                        </div>
+                    </div>
+
+                    <div class="action-bar">
+                        <input type="text" id="est-search" class="form-control w-300" placeholder="Buscar no estoque...">
+                        <span class="badge badge-danger text-sm" id="est-alerta-baixo-badge" style="display:none;">Atenção: Itens abaixo do mínimo!</span>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="table-responsive">
+                            <table class="table" id="table-estoque">
+                                <thead>
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Material</th>
+                                        <th>Quantidade Atual</th>
+                                        <th>Qtd Mínima</th>
+                                        <th>Status Estoque</th>
+                                        <th>Localização</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 14. ORDENS DE SERVIÇO VIEW -->
+                <section id="view-ordens-servico" class="view-section">
+                    <div class="action-bar">
+                        <div class="filters">
+                            <input type="text" id="os-search" class="form-control" placeholder="Buscar OS ou cliente...">
+                            <select id="os-filter-status" class="form-control">
+                                <option value="">Todos Status</option>
+                                <option value="Aguardando Arte">Aguardando Arte</option>
+                                <option value="Aprovado / Fila">Aprovado / Fila</option>
+                                <option value="Impressão">Impressão</option>
+                                <option value="Acabamento">Acabamento</option>
+                                <option value="Instalação/Entrega">Instalação/Entrega</option>
+                                <option value="Finalizado">Finalizado / Entregue</option>
+                                <option value="Cancelado">Cancelado</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary btn-icon-text" id="btn-nova-os">
+                            <i data-lucide="plus"></i> Criar Ordem de Serviço
+                        </button>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="table-responsive">
+                            <table class="table" id="table-ordens-servico">
+                                <thead>
+                                    <tr>
+                                        <th>Nº OS</th>
+                                        <th>Cliente</th>
+                                        <th>Descrição do Serviço</th>
+                                        <th>Prazo</th>
+                                        <th>Status Produção</th>
+                                        <th>Valor OS</th>
+                                        <th>Pagamento</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 15. ORÇAMENTOS VIEW -->
+                <section id="view-orçamentos" class="view-section">
+                    <div class="action-bar">
+                        <input type="text" id="orc-search" class="form-control w-300" placeholder="Buscar orçamentos...">
+                        <button class="btn btn-primary btn-icon-text" id="btn-novo-orcamento">
+                            <i data-lucide="plus"></i> Novo Orçamento Inteligente
+                        </button>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="table-responsive">
+                            <table class="table" id="table-orcamentos">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Cliente</th>
+                                        <th>Produto/Serviço</th>
+                                        <th>Dimensões (m)</th>
+                                        <th>Valor Sugerido</th>
+                                        <th>Preço Final</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 16. PRODUÇÃO VIEW -->
+                <section id="view-producao" class="view-section">
+                    <span class="text-secondary text-sm">Quadro Kanban de Produção Operacional em Tempo Real.</span>
+                    <div class="kanban-board mt-3">
+                        <div class="kanban-column" data-status="Aprovado / Fila">
+                            <div class="kanban-column-header">
+                                <span>Aprovado / Fila</span>
+                                <span class="kanban-badge" id="kb-count-fila">0</span>
+                            </div>
+                            <div class="kanban-cards" id="kb-column-fila"></div>
+                        </div>
+
+                        <div class="kanban-column" data-status="Impressão">
+                            <div class="kanban-column-header">
+                                <span>Impressão / CNC</span>
+                                <span class="kanban-badge" id="kb-count-impressao">0</span>
+                            </div>
+                            <div class="kanban-cards" id="kb-column-impressao"></div>
+                        </div>
+
+                        <div class="kanban-column" data-status="Acabamento">
+                            <div class="kanban-column-header">
+                                <span>Acabamento</span>
+                                <span class="kanban-badge" id="kb-count-acabamento">0</span>
+                            </div>
+                            <div class="kanban-cards" id="kb-column-acabamento"></div>
+                        </div>
+
+                        <div class="kanban-column" data-status="Instalação/Entrega">
+                            <div class="kanban-column-header">
+                                <span>Instalação / Entrega</span>
+                                <span class="kanban-badge" id="kb-count-instalacao">0</span>
+                            </div>
+                            <div class="kanban-cards" id="kb-column-instalacao"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 17. AGENDA VIEW -->
+                <section id="view-agenda" class="view-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Agenda de Entregas e Instalações</h3>
+                        </div>
+                        <div class="agenda-layout">
+                            <div class="agenda-calendar-mini">
+                                <!-- Placeholders for calendar view -->
+                                <div class="calendar-header-mini">
+                                    <button class="btn btn-icon btn-sm"><i data-lucide="chevron-left"></i></button>
+                                    <span class="font-bold">Julho, 2026</span>
+                                    <button class="btn btn-icon btn-sm"><i data-lucide="chevron-right"></i></button>
+                                </div>
+                                <div class="calendar-grid-mini" id="mini-calendar">
+                                    <!-- Days will be generated -->
+                                </div>
+                            </div>
+                            <div class="agenda-list flex-1">
+                                <h4 class="font-bold border-bottom pb-2">Compromissos Agendados</h4>
+                                <div class="agenda-events mt-2" id="agenda-events-container">
+                                    <!-- Events populated by JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 18. RELATÓRIOS VIEW -->
+                <section id="view-relatorios" class="view-section">
+                    <div class="grid-2">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Relatórios Financeiros</h3>
+                            </div>
+                            <div class="card-body gap-2 flex-column">
+                                <button class="btn btn-outline w-full justify-start btn-icon-text" id="btn-export-fluxo">
+                                    <i data-lucide="file-spreadsheet"></i> Exportar Fluxo de Caixa Mensal (Excel/CSV)
+                                </button>
+                                <button class="btn btn-outline w-full justify-start btn-icon-text" id="btn-export-receitas">
+                                    <i data-lucide="trending-up"></i> Relatório Geral de Receitas
+                                </button>
+                                <button class="btn btn-outline w-full justify-start btn-icon-text" id="btn-export-despesas">
+                                    <i data-lucide="trending-down"></i> Relatório Geral de Despesas
+                                </button>
+                                <button class="btn btn-outline w-full justify-start btn-icon-text" onclick="window.print()">
+                                    <i data-lucide="file-pdf"></i> Imprimir / Salvar PDF desta tela
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Relatórios Operacionais</h3>
+                            </div>
+                            <div class="card-body gap-2 flex-column">
+                                <button class="btn btn-outline w-full justify-start btn-icon-text" id="btn-export-estoque">
+                                    <i data-lucide="package"></i> Relatório de Posição de Estoque
+                                </button>
+                                <button class="btn btn-outline w-full justify-start btn-icon-text" id="btn-export-os">
+                                    <i data-lucide="check-circle-2"></i> Relatório de OS Concluídas
+                                </button>
+                                <button class="btn btn-outline w-full justify-start btn-icon-text" id="btn-export-clientes">
+                                    <i data-lucide="users"></i> Ranking de Faturamento por Cliente
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 19. METAS VIEW -->
+                <section id="view-metas" class="view-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Definição de Metas Financeiras</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label class="form-label" for="meta-input-mensal">Meta de Faturamento Mensal (R$)</label>
+                                    <input type="number" id="meta-input-mensal" class="form-control" placeholder="Ex: 50000">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="meta-input-anual">Meta de Faturamento Anual (R$)</label>
+                                    <input type="number" id="meta-input-anual" class="form-control" placeholder="Ex: 600000">
+                                </div>
+                            </div>
+                            <button class="btn btn-primary mt-3" id="btn-salvar-metas">Salvar Metas</button>
+                        </div>
+                    </div>
+
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h3 class="card-title">Acompanhamento das Metas Atuais</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="meta-progress-box">
+                                <span class="font-bold">Progresso Faturamento Mensal</span>
+                                <div class="progress-bar-container-large mt-2">
+                                    <div class="progress-bar-fill-large" id="meta-detail-mes-bar" style="width: 0%"></div>
+                                </div>
+                                <div class="flex-between mt-2">
+                                    <span id="meta-detail-mes-atual">Realizado: R$ 0,00</span>
+                                    <span id="meta-detail-mes-alvo">Alvo: R$ 0,00</span>
+                                </div>
+                            </div>
+
+                            <div class="meta-progress-box mt-4">
+                                <span class="font-bold">Progresso Faturamento Anual</span>
+                                <div class="progress-bar-container-large mt-2">
+                                    <div class="progress-bar-fill-large bg-info" id="meta-detail-ano-bar" style="width: 0%"></div>
+                                </div>
+                                <div class="flex-between mt-2">
+                                    <span id="meta-detail-ano-atual">Realizado: R$ 0,00</span>
+                                    <span id="meta-detail-ano-alvo">Alvo: R$ 0,00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 20. INDICADORES VIEW -->
+                <section id="view-indicadores" class="view-section">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-title">Margem de Lucro Média</span>
+                            <span class="stat-value text-primary" id="ind-margem-lucro">0%</span>
+                            <span class="stat-footer">Margem média calculada sobre as OS finalizadas</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-title">ROI Geral do Sistema</span>
+                            <span class="stat-value text-success" id="ind-roi">0%</span>
+                            <span class="stat-footer">Retorno sobre despesas operacionais</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-title">Custo Médio de Produção / m²</span>
+                            <span class="stat-value text-warning" id="ind-custo-medio-m2">R$ 0,00</span>
+                            <span class="stat-footer">Média ponderada do custo de insumos</span>
+                        </div>
+                    </div>
+
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h3 class="card-title">Análise de ROI por Categoria de Serviço</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chart-indicadores-categorias"></canvas>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 21. CALCULADORA VIEW -->
+                <section id="view-calculadora" class="view-section">
+                    <div class="grid-2">
+                        <!-- Inputs -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Calculadora de Preço de Comunicação Visual</h3>
+                            </div>
+                            <div class="card-body flex-column gap-3">
+                                <div class="form-group">
+                                    <label class="form-label">Material Principal</label>
+                                    <select id="calc-material" class="form-control">
+                                        <!-- Populated via JS -->
+                                    </select>
+                                </div>
+                                <div class="grid-2">
+                                    <div class="form-group">
+                                        <label class="form-label">Largura (metros)</label>
+                                        <input type="number" step="0.01" id="calc-largura" class="form-control" value="1.00">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Altura (metros)</label>
+                                        <input type="number" step="0.01" id="calc-altura" class="form-control" value="1.00">
+                                    </div>
+                                </div>
+                                <div class="grid-2">
+                                    <div class="form-group">
+                                        <label class="form-label">Quantidade</label>
+                                        <input type="number" id="calc-quantidade" class="form-control" value="1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Margem Desejada (%)</label>
+                                        <input type="number" id="calc-margem" class="form-control" value="50">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Tipo de Acabamento</label>
+                                    <select id="calc-acabamento" class="form-control">
+                                        <option value="Nenhum" data-custo="0">Nenhum (Refile simples)</option>
+                                        <option value="Ilhós" data-custo="5">Bainha com Ilhós (+ R$5,00/m linear)</option>
+                                        <option value="Bastão/Lona" data-custo="8">Bastão e Cordão (+ R$8,00/m linear)</option>
+                                        <option value="Estrutura Metálica" data-custo="45">Chassis de Metal (+ R$45,00/m²)</option>
+                                        <option value="Laminado" data-custo="20">Laminação Protetora (+ R$20,00/m²)</option>
+                                    </select>
+                                </div>
+                                <div class="grid-2">
+                                    <div class="form-group">
+                                        <label class="form-label">Custo Instalação (R$)</label>
+                                        <input type="number" id="calc-instalacao" class="form-control" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Frete / Entrega (R$)</label>
+                                        <input type="number" id="calc-frete" class="form-control" value="0">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Custo Mão de Obra / Impressão por m² (R$)</label>
+                                    <input type="number" id="calc-impressao-m2" class="form-control" value="15">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Results Card -->
+                        <div class="card bg-accent-glow">
+                            <div class="card-header">
+                                <h3 class="card-title">Resultado e Preço Sugerido</h3>
+                            </div>
+                            <div class="card-body flex-column gap-3">
+                                <div class="calc-result-item">
+                                    <span>Área Total:</span>
+                                    <span class="font-bold" id="calc-res-area">0,00 m²</span>
+                                </div>
+                                <div class="calc-result-item">
+                                    <span>Consumo de Insumo (c/ 10% perda):</span>
+                                    <span class="font-bold" id="calc-res-consumo">0,00 m²</span>
+                                </div>
+                                <div class="calc-result-item">
+                                    <span>Custo Matéria-Prima:</span>
+                                    <span class="font-bold text-danger" id="calc-res-custo-material">R$ 0,00</span>
+                                </div>
+                                <div class="calc-result-item">
+                                    <span>Custo Produção/Impressão/Acabamento:</span>
+                                    <span class="font-bold text-danger" id="calc-res-custo-producao">R$ 0,00</span>
+                                </div>
+                                <div class="calc-result-item">
+                                    <span>Custo Total Operacional:</span>
+                                    <span class="font-bold text-danger" id="calc-res-custo-total">R$ 0,00</span>
+                                </div>
+                                <hr class="border-accent">
+                                <div class="calc-result-item highlight-item">
+                                    <span>Preço Sugerido de Venda:</span>
+                                    <span class="font-bold text-success text-lg" id="calc-res-preço-sugerido">R$ 0,00</span>
+                                </div>
+                                <div class="calc-result-item">
+                                    <span>Lucro Bruto Estimado:</span>
+                                    <span class="font-bold text-success" id="calc-res-lucro">R$ 0,00</span>
+                                </div>
+                                <div class="calc-result-item">
+                                    <span>Margem Efetiva:</span>
+                                    <span class="font-bold text-success" id="calc-res-margem">0%</span>
+                                </div>
+                                <div class="calc-result-item">
+                                    <span>Tempo Médio Estimado de Produção:</span>
+                                    <span class="font-bold" id="calc-res-tempo">1.5 dias</span>
+                                </div>
+                                <div class="flex-between mt-3 gap-2">
+                                    <button class="btn btn-outline flex-1" id="calc-btn-limpar">Limpar</button>
+                                    <button class="btn btn-success flex-1 btn-icon-text" id="calc-btn-salvar-orcamento">
+                                        <i data-lucide="check"></i> Criar Orçamento
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 22. CONFIGURAÇÕES VIEW -->
+                <section id="view-configuracoes" class="view-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Configurações Gerais do ERP</h3>
+                        </div>
+                        <div class="card-body flex-column gap-3">
+                            <h4 class="font-bold mt-2">Dados da Empresa</h4>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label class="form-label">Nome da Empresa</label>
+                                    <input type="text" id="config-empresa-nome" class="form-control" value="Metal Print Comunicação Visual">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">CNPJ</label>
+                                    <input type="text" id="config-empresa-cnpj" class="form-control" value="12.345.678/0001-99">
+                                </div>
+                            </div>
+
+                            <h4 class="font-bold mt-3 border-top pt-3">Conexão Firebase Firestore</h4>
+                            <div class="alert alert-info">
+                                <i data-lucide="info" style="min-width: 20px;"></i>
+                                <span>O sistema já está configurado com o Firestore fornecido. As coleções são gerenciadas em tempo real sob o contexto desta empresa.</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Firebase Project ID</label>
+                                <input type="text" class="form-control" value="metal-print-a099b" disabled>
+                            </div>
+                            
+                            <button class="btn btn-primary mt-2" id="btn-salvar-configuracoes">Salvar Configurações</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 23. AJUDA VIEW -->
+                <section id="view-ajuda" class="view-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Central de Ajuda & Guia de Uso</h3>
+                        </div>
+                        <div class="card-body">
+                            <h4 class="font-bold text-primary">Especificidades de Comunicação Visual no ERP</h4>
+                            <p class="text-sm mt-1 text-secondary">
+                                O Metal Print Finance foi moldado exclusivamente para o dia a dia de gráficas, produtoras de fachadas e birôs de impressão digital. Veja como utilizar cada recurso principal:
+                            </p>
+                            
+                            <div class="help-grid mt-3">
+                                <div class="help-box">
+                                    <span class="help-title"><i data-lucide="calculator"></i> Calculadora e Orçamentos</span>
+                                    <p class="text-xs text-secondary mt-1">
+                                        Ao criar um orçamento, você define as medidas (largura x altura) do banner, lona, ACM ou acrílico. O sistema calcula a área quadrada, soma a taxa de desperdício média da produção (10%) e aplica os custos cadastrados do material e mão de obra para dar o preço final com a margem desejada.
+                                    </p>
+                                </div>
+                                <div class="help-box">
+                                    <span class="help-title"><i data-lucide="package"></i> Estoque e Baixa Automática</span>
+                                    <p class="text-xs text-secondary mt-1">
+                                        Cada material (ex: Lona, Adesivo, ACM) possui uma área ou quantidade cadastrada. Quando uma Ordem de Serviço muda para o status <strong>"Finalizado / Entregue"</strong>, os materiais vinculados nela são debitados do estoque físico automaticamente, registrando o desperdício correspondente.
+                                    </p>
+                                </div>
+                                <div class="help-box">
+                                    <span class="help-title"><i data-lucide="sparkles"></i> Assistente IA Financeiro</span>
+                                    <p class="text-xs text-secondary mt-1">
+                                        Use a barra do assistente de IA na parte inferior direita da tela para interagir com seus dados financeiros. Você pode perguntar sobre faturamento, ordens atrasadas ou estoque diretamente e o assistente fará a verificação instantânea das tabelas.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- AI FLOATING PANEL (BUSINESS IA) -->
+    <div class="ai-assistant-panel" id="ai-panel">
+        <div class="ai-panel-header" id="ai-panel-toggle">
+            <div class="flex-align gap-2">
+                <i data-lucide="sparkles" class="text-accent"></i>
+                <span class="font-bold text-white text-sm">Assistente Metal Print IA</span>
+            </div>
+            <button class="btn btn-icon btn-sm text-white" id="ai-panel-close-btn"><i data-lucide="chevron-down"></i></button>
+        </div>
+        <div class="ai-panel-body">
+            <div class="ai-chat-messages" id="ai-chat-messages">
+                <div class="ai-message ai-bot">
+                    Olá! Sou o seu assistente de gestão Metal Print. Como posso ajudar com finanças, estoque ou ordens hoje?
+                </div>
+            </div>
+            <div class="ai-panel-input">
+                <input type="text" id="ai-panel-input-field" placeholder="Escreva sua dúvida aqui...">
+                <button class="btn btn-icon btn-primary" id="ai-panel-send-btn"><i data-lucide="send"></i></button>
+            </div>
+        </div>
+    </div>
+    
+    <button class="ai-floating-trigger" id="ai-floating-btn" title="Conversar com a IA">
+        <i data-lucide="sparkles"></i>
+    </button>
+
+    <!-- GENERAL MODALS -->
+    <!-- 1. MODAL TRANSAÇÃO (NOVO LANÇAMENTO) -->
+    <div class="modal" id="modal-transacao">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-transacao-title">Novo Lançamento Financeiro</h3>
+                <button class="modal-close" data-close="modal-transacao">&times;</button>
+            </div>
+            <form id="form-transacao" class="modal-body flex-column gap-3">
+                <input type="hidden" id="trans-id">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Tipo de Lançamento</label>
+                        <select id="trans-tipo" class="form-control" required>
+                            <option value="Receita">Receita (Entrada)</option>
+                            <option value="Despesa">Despesa (Saída)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Valor (R$)</label>
+                        <input type="number" step="0.01" id="trans-valor" class="form-control" placeholder="0,00" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descrição / Histórico</label>
+                    <input type="text" id="trans-descricao" class="form-control" placeholder="Ex: Compra de Bobina de Lona Brilho" required>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Cliente / Fornecedor / Origem</label>
+                        <input type="text" id="trans-entidade" class="form-control" placeholder="Ex: Serilon Insumos">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Data de Competência</label>
+                        <input type="date" id="trans-data" class="form-control" required>
+                    </div>
+                </div>
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label class="form-label">Categoria</label>
+                        <select id="trans-categoria" class="form-control" required>
+                            <option value="Venda de Serviços">Venda de Serviços</option>
+                            <option value="Venda de Fachadas">Venda de Fachadas</option>
+                            <option value="Mão de Obra Terceirizada">Mão de Obra Terceirizada</option>
+                            <option value="Matéria-Prima / Insumos">Matéria-Prima / Insumos</option>
+                            <option value="Energia / Água / Telecom">Energia / Água / Telecom</option>
+                            <option value="Aluguel / Condomínio">Aluguel / Condomínio</option>
+                            <option value="Salários / Comissões">Salários / Comissões</option>
+                            <option value="Impostos / Taxas">Impostos / Taxas</option>
+                            <option value="Manutenção de Máquinas">Manutenção de Máquinas</option>
+                            <option value="Outros">Outros</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Centro de Custo</label>
+                        <select id="trans-centro-custo" class="form-control" required>
+                            <option value="Geral">Geral / Administrativo</option>
+                            <option value="Comunicação Visual">Comunicação Visual / Lonas</option>
+                            <option value="Serralheria / ACM">Serralheria / ACM / Fachadas</option>
+                            <option value="Router CNC / Laser">Router CNC / Laser / Acrílico</option>
+                            <option value="Instalações Externas">Instalações Externas</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Método Pagamento</label>
+                        <select id="trans-metodo" class="form-control" required>
+                            <option value="PIX">PIX</option>
+                            <option value="Boleto">Boleto Bancário</option>
+                            <option value="Dinheiro">Dinheiro</option>
+                            <option value="Cartão de Crédito">Cartão de Crédito</option>
+                            <option value="Cartão de Débito">Cartão de Débito</option>
+                            <option value="Transferência Bancária">TED / DOC / Conta</option>
+                            <option value="Cheque">Cheque</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group flex-row gap-2 align-items-center mt-3">
+                        <input type="checkbox" id="trans-recorrente" class="form-checkbox">
+                        <label for="trans-recorrente" class="form-label mb-0">Lançamento Recorrente (Mensal)</label>
+                    </div>
+                    <div class="form-group flex-row gap-2 align-items-center mt-3">
+                        <input type="checkbox" id="trans-pago" class="form-checkbox" checked>
+                        <label for="trans-pago" class="form-label mb-0">Confirmado / Pago / Recebido</label>
+                    </div>
+                </div>
+                <div class="flex-end gap-2 border-top pt-3">
+                    <button type="button" class="btn btn-outline" data-close="modal-transacao">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Lançamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. MODAL CLIENTE -->
+    <div class="modal" id="modal-cliente">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Novo Cliente</h3>
+                <button class="modal-close" data-close="modal-cliente">&times;</button>
+            </div>
+            <form id="form-cliente" class="modal-body flex-column gap-3">
+                <input type="hidden" id="cli-id">
+                <div class="form-group">
+                    <label class="form-label">Nome / Razão Social</label>
+                    <input type="text" id="cli-nome" class="form-control" required placeholder="Ex: Lojas Renner S/A">
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">CNPJ / CPF</label>
+                        <input type="text" id="cli-documento" class="form-control" placeholder="00.000.000/0000-00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Contato / Responsável</label>
+                        <input type="text" id="cli-responsavel" class="form-control" placeholder="Ex: Carlos Alberto (Compras)">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Telefone / WhatsApp</label>
+                        <input type="text" id="cli-telefone" class="form-control" placeholder="(11) 99999-9999">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">E-mail</label>
+                        <input type="email" id="cli-email" class="form-control" placeholder="compras@cliente.com.br">
+                    </div>
+                </div>
+                <div class="grid-3">
+                    <div class="form-group col-span-2">
+                        <label class="form-label">Endereço Completo</label>
+                        <input type="text" id="cli-endereco" class="form-control" placeholder="Av. Central, 1234">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Cidade/UF</label>
+                        <input type="text" id="cli-cidade" class="form-control" placeholder="São Paulo/SP">
+                    </div>
+                </div>
+                <div class="flex-end gap-2 border-top pt-3">
+                    <button type="button" class="btn btn-outline" data-close="modal-cliente">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. MODAL MATERIAL -->
+    <div class="modal" id="modal-material">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Novo Material / Insumo</h3>
+                <button class="modal-close" data-close="modal-material">&times;</button>
+            </div>
+            <form id="form-material" class="modal-body flex-column gap-3">
+                <input type="hidden" id="mat-id">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Código Único (Ref)</label>
+                        <input type="text" id="mat-codigo" class="form-control" placeholder="Ex: MAT-01" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nome do Material</label>
+                        <input type="text" id="mat-nome" class="form-control" placeholder="Ex: Chapa ACM 3mm" required>
+                    </div>
+                </div>
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label class="form-label">Categoria</label>
+                        <select id="mat-categoria" class="form-control" required>
+                            <option value="ACM">ACM (Fachada)</option>
+                            <option value="Lona">Lona / Banner</option>
+                            <option value="Adesivo">Adesivo Vinil</option>
+                            <option value="MDF">MDF</option>
+                            <option value="Acrílico">Acrílico</option>
+                            <option value="PVC/PS">PVC / PS / Canaleta</option>
+                            <option value="Acessórios">Acessórios / Parafuso / Cola</option>
+                            <option value="Metal">Serralheria / Ferro / Alumínio</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Unidade de Medida</label>
+                        <select id="mat-unidade" class="form-control" required>
+                            <option value="m²">m² (Metro Quadrado)</option>
+                            <option value="un">un (Unidade)</option>
+                            <option value="m">m (Metro Linear)</option>
+                            <option value="kg">kg (Quilograma)</option>
+                            <option value="chapa">Chapa</option>
+                            <option value="rolo">Rolo</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Localização Física</label>
+                        <input type="text" id="mat-local" class="form-control" placeholder="Prateleira A2">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Preço de Compra (Custo m²/un)</label>
+                        <input type="number" step="0.01" id="mat-preco-compra" class="form-control" placeholder="0.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Preço Sugerido Venda (m²/un)</label>
+                        <input type="number" step="0.01" id="mat-preco-venda" class="form-control" placeholder="0.00">
+                    </div>
+                </div>
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label class="form-label">Quantidade Atual</label>
+                        <input type="number" step="0.01" id="mat-quantidade" class="form-control" value="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Quantidade Mínima</label>
+                        <input type="number" step="0.01" id="mat-qtd-minima" class="form-control" value="5" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fornecedor Padrão</label>
+                        <select id="mat-fornecedor" class="form-control">
+                            <option value="">Nenhum</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex-end gap-2 border-top pt-3">
+                    <button type="button" class="btn btn-outline" data-close="modal-material">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Material</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 4. MODAL ORDEM DE SERVIÇO (OS) -->
+    <div class="modal" id="modal-os">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Nova Ordem de Serviço</h3>
+                <button class="modal-close" data-close="modal-os">&times;</button>
+            </div>
+            <form id="form-os" class="modal-body flex-column gap-3">
+                <input type="hidden" id="os-id">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Nº OS (Automático se vazio)</label>
+                        <input type="text" id="os-numero" class="form-control" placeholder="Gerado automaticamente" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Selecione o Cliente</label>
+                        <select id="os-cliente" class="form-control" required>
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descrição do Serviço / Arte / Projeto</label>
+                    <textarea id="os-descricao" class="form-control" rows="3" placeholder="Detalhe o projeto: Medidas, estrutura, cores, local de instalação, etc..." required></textarea>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Prazo de Entrega</label>
+                        <input type="date" id="os-prazo" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Responsável pela Produção</label>
+                        <select id="os-funcionario" class="form-control" required>
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+                </div>
+
+                <h4 class="font-bold border-top pt-3 text-sm">Materiais e Consumo do Insumo para esta OS</h4>
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label class="form-label">Material Gasto</label>
+                        <select id="os-material" class="form-control">
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Área / Qtd Gasta (m² / un)</label>
+                        <input type="number" step="0.01" id="os-material-qtd" class="form-control" value="0">
+                    </div>
+                    <div class="form-group flex-end">
+                        <button type="button" class="btn btn-outline" id="os-btn-add-material">Vincular Material</button>
+                    </div>
+                </div>
+                
+                <!-- Table for added materials in current OS -->
+                <div class="table-responsive select-materials-box">
+                    <table class="table table-sm" id="os-table-materiais">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Material</th>
+                                <th>Qtd</th>
+                                <th>Preço m²/un</th>
+                                <th>Total</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="grid-3 border-top pt-3">
+                    <div class="form-group">
+                        <label class="form-label">Custo Mão de Obra / Extras (R$)</label>
+                        <input type="number" step="0.01" id="os-custo-extra" class="form-control" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Valor Total Cobrado (R$)</label>
+                        <input type="number" step="0.01" id="os-valor-total" class="form-control" placeholder="0,00" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status Produção</label>
+                        <select id="os-status" class="form-control" required>
+                            <option value="Aguardando Arte">Aguardando Arte</option>
+                            <option value="Aprovado / Fila">Aprovado / Fila</option>
+                            <option value="Impressão">Impressão / CNC</option>
+                            <option value="Acabamento">Acabamento</option>
+                            <option value="Instalação/Entrega">Instalação/Entrega</option>
+                            <option value="Finalizado">Finalizado / Entregue</option>
+                            <option value="Cancelado">Cancelado</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Status do Recebimento</label>
+                        <select id="os-financeiro-status" class="form-control" required>
+                            <option value="Pendente">A Receber / Pendente</option>
+                            <option value="Pago">Pago / Recebido Total</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Método de Recebimento</label>
+                        <select id="os-metodo-recebimento" class="form-control">
+                            <option value="PIX">PIX</option>
+                            <option value="Boleto">Boleto Bancário</option>
+                            <option value="Dinheiro">Dinheiro</option>
+                            <option value="Cartão de Crédito">Cartão de Crédito</option>
+                            <option value="Transferência Bancária">Transferência Bancária</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex-end gap-2 border-top pt-3">
+                    <button type="button" class="btn btn-outline" data-close="modal-os">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Gerar / Salvar OS</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 5. MODAL FORNECEDOR -->
+    <div class="modal" id="modal-fornecedor">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Novo Fornecedor</h3>
+                <button class="modal-close" data-close="modal-fornecedor">&times;</button>
+            </div>
+            <form id="form-fornecedor" class="modal-body flex-column gap-3">
+                <input type="hidden" id="for-id">
+                <div class="form-group">
+                    <label class="form-label">Razão Social / Nome Fantasia</label>
+                    <input type="text" id="for-nome" class="form-control" placeholder="Ex: Serilon Brasil Ltda" required>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">CNPJ</label>
+                        <input type="text" id="for-cnpj" class="form-control" placeholder="00.000.000/0000-00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Contato / Atendente</label>
+                        <input type="text" id="for-contato" class="form-control" placeholder="Ex: João (Comercial)">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Telefone</label>
+                        <input type="text" id="for-telefone" class="form-control" placeholder="(11) 3333-3333">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">E-mail</label>
+                        <input type="email" id="for-email" class="form-control" placeholder="vendas@fornecedor.com.br">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Insumos Principais Fornecidos</label>
+                    <input type="text" id="for-insumos" class="form-control" placeholder="Ex: Lonas, Adesivos, Chapas de ACM">
+                </div>
+                <div class="flex-end gap-2 border-top pt-3">
+                    <button type="button" class="btn btn-outline" data-close="modal-fornecedor">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Fornecedor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 6. MODAL FUNCIONÁRIO -->
+    <div class="modal" id="modal-funcionario">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Novo Funcionário</h3>
+                <button class="modal-close" data-close="modal-funcionario">&times;</button>
+            </div>
+            <form id="form-funcionario" class="modal-body flex-column gap-3">
+                <input type="hidden" id="fun-id">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Nome Completo</label>
+                        <input type="text" id="fun-nome" class="form-control" placeholder="Ex: Rodrigo Santos" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Cargo / Função</label>
+                        <select id="fun-cargo" class="form-control" required>
+                            <option value="Serralheiro">Serralheiro (Fachadas)</option>
+                            <option value="Impressor">Impressor Digital</option>
+                            <option value="Acabador">Acabador / Auxiliar</option>
+                            <option value="Designer / Arte-Finalista">Designer / Arte-Finalista</option>
+                            <option value="Instalador">Instalador Externo</option>
+                            <option value="Operador Router/Laser">Operador Router / Laser</option>
+                            <option value="Administrador">Administrador / Financeiro</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Salário Base Mensal (R$)</label>
+                        <input type="number" id="fun-salario" class="form-control" placeholder="3000" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Custo Estimado por Hora (R$)</label>
+                        <input type="number" id="fun-custo-hora" class="form-control" placeholder="18">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Telefone</label>
+                        <input type="text" id="fun-telefone" class="form-control" placeholder="(11) 98888-8888">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Data de Admissão</label>
+                        <input type="date" id="fun-admissao" class="form-control" required>
+                    </div>
+                </div>
+                <div class="flex-end gap-2 border-top pt-3">
+                    <button type="button" class="btn btn-outline" data-close="modal-funcionario">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Funcionário</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 7. MODAL PRODUTO PADRÃO -->
+    <div class="modal" id="modal-produto">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Novo Produto Padrão</h3>
+                <button class="modal-close" data-close="modal-produto">&times;</button>
+            </div>
+            <form id="form-produto" class="modal-body flex-column gap-3">
+                <input type="hidden" id="prod-id">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Código do Modelo</label>
+                        <input type="text" id="prod-codigo" class="form-control" placeholder="Ex: PROD-BANNER" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nome do Produto</label>
+                        <input type="text" id="prod-nome" class="form-control" placeholder="Ex: Banner Lona 440g c/ Bastão" required>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Insumo Base Utilizado</label>
+                        <select id="prod-material" class="form-control" required>
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Margem Recomendada (%)</label>
+                        <input type="number" id="prod-margem" class="form-control" value="60">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Instruções de Acabamento Padrão</label>
+                    <input type="text" id="prod-acabamento" class="form-control" placeholder="Ex: Bastão superior e inferior com cordão">
+                </div>
+                <div class="flex-end gap-2 border-top pt-3">
+                    <button type="button" class="btn btn-outline" data-close="modal-produto">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Produto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase SDK (Compat Version) para permitir execução offline e via protocolo file:// -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <!-- Script Link -->
+    <script src="script.js"></script>
+</body>
+</html>
