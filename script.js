@@ -34,11 +34,54 @@ const state = {
     financeiro: [],
     orcamentos: [],
     ordens_servico: [],
+    recibos: [],
     metas: { mensal: 50000, anual: 600000 },
     
     // Temporários para controle de UI
-    osMateriaisVinculados: []
+    osMateriaisVinculados: [],
+    orcMateriaisVinculados: []
 };
+
+// Configuração Gemini API
+async function callGeminiAPI(promptText, systemInstruction = "") {
+    const customKey = localStorage.getItem("mp_gemini_api_key");
+    const key = customKey && customKey.trim() !== "" ? customKey.trim() : "AIzaSyA_IIOZ9J3YvrWr__ipeoolT6m1bGQ82kk";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+    
+    const requestBody = {
+        contents: [{
+            parts: [{ text: promptText }]
+        }]
+    };
+    
+    if (systemInstruction) {
+        requestBody.systemInstruction = {
+            parts: [{ text: systemInstruction }]
+        };
+    }
+    
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestBody)
+        });
+        
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.error?.message || "Erro de comunicação com o servidor Gemini.");
+        }
+        
+        const resData = await response.json();
+        if (!resData.candidates || resData.candidates.length === 0) {
+            throw new Error("Sem resposta válida do Gemini.");
+        }
+        return resData.candidates[0].content.parts[0].text;
+    } catch (e) {
+        console.error("Erro na API Gemini:", e);
+        return `Erro de API Gemini: ${e.message}. Por favor, configure uma Chave API válida nas configurações da plataforma.`;
+    }
+}
 
 // Instâncias Globais de Gráficos (Chart.js)
 let chartFluxoCaixa = null;
@@ -48,13 +91,17 @@ let chartIndicadoresCategorias = null;
 // 1. INICIALIZAÇÃO DE BANCO DE DADOS E EVENTOS
 function initDb() {
     const statusBadge = document.getElementById("firebase-status");
-    // Verifica se a biblioteca do Firebase (Compat) foi carregada via CDN
     if (typeof firebase !== 'undefined') {
         try {
             firebase.initializeApp(firebaseConfig);
             db = firebase.firestore();
-            firebaseActive = true;
             
+            // Habilita persistência offline do Firestore
+            db.enablePersistence().catch(err => {
+                console.warn("Persistência offline do Firestore falhou:", err.code);
+            });
+            
+            firebaseActive = true;
             statusBadge.classList.add("online");
             statusBadge.querySelector(".status-text").textContent = "Nuvem (Firestore)";
             console.log("Firebase Firestore inicializado com sucesso.");
@@ -74,7 +121,7 @@ function initDb() {
 
 // Escutando alterações em tempo real
 function setupRealtimeListeners() {
-    const collectionsToListen = ["clientes", "fornecedores", "funcionarios", "materiais", "produtos", "financeiro", "orcamentos", "ordens_servico"];
+    const collectionsToListen = ["clientes", "fornecedores", "funcionarios", "materiais", "produtos", "financeiro", "orcamentos", "ordens_servico", "recibos"];
     
     if (firebaseActive && db) {
         collectionsToListen.forEach(colName => {
@@ -232,6 +279,7 @@ function renderActiveTab() {
         case "estoque": renderEstoque(); break;
         case "ordens-servico": renderOrdensServico(); break;
         case "orçamentos": renderOrcamentos(); break;
+        case "recibos": renderRecibos(); break;
         case "producao": renderProducao(); break;
         case "agenda": renderAgenda(); break;
         case "relatorios": renderRelatorios(); break;
@@ -769,6 +817,7 @@ function renderClientes() {
             <td>${c.cidade || '-'}</td>
             <td class="font-bold text-success">${formatCurrency(total)}</td>
             <td class="actions-cell">
+                <button class="btn btn-outline btn-icon btn-sm" onclick="window.app.generateReceiptFromClient('${c.nome}')" title="Gerar Recibo"><i data-lucide="receipt"></i></button>
                 <button class="btn btn-outline btn-icon btn-sm" onclick="window.app.editClient('${c.id}')"><i data-lucide="edit"></i></button>
                 <button class="btn btn-danger btn-icon btn-sm" onclick="window.app.deleteClient('${c.id}')"><i data-lucide="trash-2"></i></button>
             </td>
@@ -1006,6 +1055,7 @@ function renderOrdensServico() {
                 </span>
             </td>
             <td class="actions-cell">
+                <button class="btn btn-outline btn-icon btn-sm" onclick="window.app.printOS('${o.id}')" title="Gerar PDF / Imprimir OS"><i data-lucide="printer"></i></button>
                 <button class="btn btn-outline btn-icon btn-sm" onclick="window.app.editOS('${o.id}')" title="Editar OS"><i data-lucide="edit"></i></button>
                 <button class="btn btn-danger btn-icon btn-sm" onclick="window.app.deleteOS('${o.id}')" title="Cancelar OS"><i data-lucide="trash-2"></i></button>
             </td>
@@ -1032,12 +1082,20 @@ function renderOrcamentos() {
         if (search && !o.cliente.toLowerCase().includes(search) && !o.produto.toLowerCase().includes(search)) return;
 
         rowsCount++;
+        
+        // Listar materiais cadastrados no orçamento
+        let materiaisTexto = "Nenhum";
+        if (o.materiaisUtilizados && o.materiaisUtilizados.length > 0) {
+            materiaisTexto = o.materiaisUtilizados.map(m => `${m.nome} (${m.quantidade})`).join(", ");
+        }
+
         const row = document.createElement("tr");
         row.innerHTML = `
             <td>${formatDateBR(o.data)}</td>
             <td><strong>${o.cliente}</strong></td>
             <td>${o.produto}</td>
             <td>${o.largura}x${o.altura} m (${o.quantidade} un)</td>
+            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="${materiaisTexto}">${materiaisTexto}</td>
             <td class="text-secondary">${formatCurrency(o.valorSugerido)}</td>
             <td class="font-bold text-success">${formatCurrency(o.valorFinal)}</td>
             <td>
@@ -1056,9 +1114,355 @@ function renderOrcamentos() {
     });
 
     if (rowsCount === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="empty-state">Nenhum orçamento emitido.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="empty-state">Nenhum orçamento emitido.</td></tr>`;
     }
     triggerLucide();
+}
+
+// --- VIEW: RECIBOS ---
+function renderRecibos() {
+    const tbody = document.querySelector("#table-recibos tbody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    const search = document.getElementById("rec-recibo-search").value.toLowerCase();
+    const sortedRecibos = [...(state.recibos || [])].sort((a, b) => b.data.localeCompare(a.data));
+    let rowsCount = 0;
+
+    sortedRecibos.forEach((r, idx) => {
+        if (search && !r.cliente.toLowerCase().includes(search) && !r.descricao.toLowerCase().includes(search)) return;
+
+        rowsCount++;
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td><code>REC-${String(idx + 1001).substring(1)}</code></td>
+            <td>${formatDateBR(r.data)}</td>
+            <td><strong>${r.cliente}</strong></td>
+            <td>${r.descricao.substring(0, 50)}${r.descricao.length > 50 ? '...' : ''}</td>
+            <td class="font-bold text-success">${formatCurrency(r.valor)}</td>
+            <td>${r.pagamento}</td>
+            <td class="actions-cell">
+                <button class="btn btn-outline btn-icon btn-sm" onclick="window.app.printReceipt('${r.id}')" title="Imprimir Recibo"><i data-lucide="printer"></i></button>
+                <button class="btn btn-danger btn-icon btn-sm" onclick="window.app.deleteReceipt('${r.id}')" title="Excluir Recibo"><i data-lucide="trash-2"></i></button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    if (rowsCount === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-state">Nenhum recibo gerado.</td></tr>`;
+    }
+    triggerLucide();
+}
+
+// Modais e auxiliares de orçamentos e recibos
+function openBudgetModal() {
+    state.orcMateriaisVinculados = [];
+    document.getElementById("orc-descricao").value = "";
+    document.getElementById("orc-largura").value = "1.00";
+    document.getElementById("orc-altura").value = "1.00";
+    document.getElementById("orc-quantidade").value = "1";
+    document.getElementById("orc-margem").value = "50";
+    document.getElementById("orc-validade").value = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    
+    // Esconder seção da IA
+    document.getElementById("ai-calc-section").style.display = "none";
+    document.getElementById("ai-calc-result").innerHTML = "";
+
+    // Popular clientes
+    const cliSel = document.getElementById("orc-cliente");
+    cliSel.innerHTML = "";
+    state.clientes.forEach(c => {
+        cliSel.innerHTML += `<option value="${c.nome}">${c.nome}</option>`;
+    });
+    if (state.clientes.length === 0) {
+        cliSel.innerHTML = `<option value="">Nenhum cliente cadastrado</option>`;
+    }
+
+    // Popular materiais
+    const matSel = document.getElementById("orc-material-sel");
+    matSel.innerHTML = "";
+    state.materiais.forEach(m => {
+        matSel.innerHTML += `<option value="${m.id}">${m.nome} (compra: ${formatCurrency(m.precoCompra)})</option>`;
+    });
+    if (state.materiais.length === 0) {
+        matSel.innerHTML = `<option value="">Nenhum material cadastrado</option>`;
+    }
+
+    renderOrcMaterialsTable();
+    document.getElementById("modal-orcamento").classList.add("show");
+}
+
+function renderOrcMaterialsTable() {
+    const tbody = document.querySelector("#orc-table-materiais tbody");
+    tbody.innerHTML = "";
+    state.orcMateriaisVinculados.forEach((m, idx) => {
+        tbody.innerHTML += `
+            <tr>
+                <td>${m.nome}</td>
+                <td>${m.quantidade}</td>
+                <td>${formatCurrency(m.preco)}</td>
+                <td><strong>${formatCurrency(m.total)}</strong></td>
+                <td><button type="button" class="btn btn-danger btn-sm" onclick="removeOrcMaterial(${idx})">&times;</button></td>
+            </tr>
+        `;
+    });
+}
+
+function removeOrcMaterial(idx) {
+    state.orcMateriaisVinculados.splice(idx, 1);
+    renderOrcMaterialsTable();
+}
+
+function openReceiptModal(forcedClienteNome = "") {
+    document.getElementById("form-recibo").reset();
+    document.getElementById("recibo-id").value = "";
+    document.getElementById("recibo-data").value = new Date().toISOString().split("T")[0];
+
+    const cliSel = document.getElementById("recibo-cliente");
+    cliSel.innerHTML = "";
+    state.clientes.forEach(c => {
+        cliSel.innerHTML += `<option value="${c.nome}">${c.nome}</option>`;
+    });
+    if (state.clientes.length === 0) {
+        cliSel.innerHTML = `<option value="">Nenhum cliente cadastrado</option>`;
+    }
+
+    if (forcedClienteNome) {
+        cliSel.value = forcedClienteNome;
+    }
+
+    document.getElementById("modal-recibo").classList.add("show");
+}
+
+// Emissores de PDF/Impressão
+function generateOSPDF(osId) {
+    const os = state.ordens_servico.find(o => o.id === osId);
+    if (!os) return alert("OS não encontrada.");
+
+    const cli = state.clientes.find(c => c.nome === os.cliente) || {};
+    
+    // Montar materiais
+    let materiaisHTML = "";
+    if (os.materiaisUtilizados && os.materiaisUtilizados.length > 0) {
+        os.materiaisUtilizados.forEach(m => {
+            materiaisHTML += `
+                <tr>
+                    <td><code>${m.codigo}</code></td>
+                    <td>${m.nome}</td>
+                    <td>${m.quantidade}</td>
+                    <td>${formatCurrency(m.preco)}</td>
+                    <td><strong>${formatCurrency(m.total)}</strong></td>
+                </tr>
+            `;
+        });
+    } else {
+        materiaisHTML = `<tr><td colspan="5" class="empty-state" style="text-align:center">Nenhum material associado a esta OS.</td></tr>`;
+    }
+
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(\`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Ordem de Serviço \${os.numero}</title>
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+            <style>
+                body { font-family: 'Inter', sans-serif; padding: 20px; color: #0f172a; line-height: 1.5; background: #fff; }
+                .print-doc { max-width: 800px; margin: 0 auto; border: 1px solid #e2e8f0; padding: 40px; border-radius: 12px; }
+                .print-doc-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #5925e0; padding-bottom: 20px; margin-bottom: 30px; }
+                .print-company-name { font-size: 24px; font-weight: 800; color: #5925e0; margin: 0; }
+                .print-company-sub { font-size: 12px; color: #64748b; margin-top: 4px; }
+                .print-doc-number { text-align: right; }
+                .print-doc-number h2 { font-size: 22px; margin: 0; color: #0f172a; }
+                .print-doc-number span { font-size: 12px; color: #64748b; }
+                .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+                .info-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
+                .info-box h4 { margin: 0 0 8px 0; font-size: 13px; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px; }
+                .info-box p { margin: 4px 0; font-size: 13px; }
+                .print-section { margin-bottom: 24px; }
+                .print-section h3 { font-size: 13px; font-weight: 700; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin: 0 0 12px 0; }
+                .print-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 16px; }
+                .print-table th { background: #f8fafc; padding: 10px 14px; text-align: left; font-weight: 600; color: #475569; border: 1px solid #e2e8f0; }
+                .print-table td { padding: 10px 14px; border: 1px solid #e2e8f0; }
+                .print-total-box { background: #5925e0; color: white; padding: 16px 24px; border-radius: 8px; text-align: right; margin-top: 20px; }
+                .print-total-box .label { font-size: 12px; opacity: 0.8; }
+                .print-total-box .value { font-size: 28px; font-weight: 800; margin-top: 2px; }
+                .print-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 60px; }
+                .signature-block { display: flex; flex-direction: column; align-items: center; }
+                .signature-line { border-top: 1px solid #0f172a; width: 80%; padding-top: 8px; font-size: 12px; color: #64748b; text-align: center; }
+                .print-footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; text-align: center; }
+                .no-print-btn { background: #5925e0; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; margin-bottom: 20px; font-family: 'Inter', sans-serif; font-size: 13px; }
+                @media print { .no-print-btn { display: none; } body { padding: 0; } .print-doc { border: none; padding: 0; } }
+            </style>
+        </head>
+        <body>
+            <div style="max-width: 800px; margin: 0 auto; text-align: right;">
+                <button class="no-print-btn" onclick="window.print()">Imprimir OS / Salvar PDF</button>
+            </div>
+            <div class="print-doc">
+                <div class="print-doc-header">
+                    <div>
+                        <h1 class="print-company-name">\${state.companyName}</h1>
+                        <div class="print-company-sub">CNPJ: \${state.companyCnpj} | ERP Operacional</div>
+                    </div>
+                    <div class="print-doc-number">
+                        <h2>ORDEM DE SERVIÇO</h2>
+                        <span>Nº: <strong>\${os.numero}</strong> | Emitido em: \${new Date().toLocaleDateString("pt-BR")}</span>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="info-box">
+                        <h4>Cliente</h4>
+                        <p><strong>\${os.cliente}</strong></p>
+                        <p>Documento: \${cli.documento || '-'}</p>
+                        <p>Telefone: \${cli.telefone || '-'}</p>
+                        <p>Endereço: \${cli.endereco || '-'}</p>
+                        <p>Cidade/UF: \${cli.cidade || '-'}</p>
+                    </div>
+                    <div class="info-box">
+                        <h4>Detalhes da OS</h4>
+                        <p>Prazo de Entrega: <strong>\${formatDateBR(os.prazo)}</strong></p>
+                        <p>Responsável: \${os.responsavel || '-'}</p>
+                        <p>Status Produção: \${os.status}</p>
+                        <p>Status Financeiro: \${os.financeiroStatus}</p>
+                    </div>
+                </div>
+
+                <div class="print-section">
+                    <h3>Descrição do Serviço / Projeto</h3>
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px; font-size:13px; white-space:pre-wrap;">\${os.descricao}</div>
+                </div>
+
+                <div class="print-section">
+                    <h3>Materiais e Insumos Vinculados</h3>
+                    <table class="print-table">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Material</th>
+                                <th>Qtd</th>
+                                <th>Preço de Custo</th>
+                                <th>Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            \${materiaisHTML}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="print-total-box">
+                    <div class="label">VALOR TOTAL DO SERVIÇO</div>
+                    <div class="value">\${formatCurrency(os.valorTotal)}</div>
+                </div>
+
+                <div class="print-signatures">
+                    <div class="signature-block">
+                        <div style="height:50px"></div>
+                        <div class="signature-line">
+                            <strong>\${os.responsavel || 'Responsável Operacional'}</strong><br>
+                            Assinatura do Responsável
+                        </div>
+                    </div>
+                    <div class="signature-block">
+                        <div style="height:50px"></div>
+                        <div class="signature-line">
+                            <strong>Gerente da Empresa</strong><br>
+                            Assinatura do Autorizador
+                        </div>
+                    </div>
+                </div>
+
+                <div class="print-footer">
+                    Documento operacional gerado automaticamente via ERP Metal Print Finance. Todos os materiais descritos foram debitados do estoque da empresa.
+                </div>
+            </div>
+        </body>
+        </html>
+    \`);
+    printWindow.document.close();
+}
+
+function generateReceiptPDF(receiptId) {
+    const r = state.recibos.find(rec => rec.id === receiptId);
+    if (!r) return alert("Recibo não encontrado.");
+
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(\`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Recibo de Pagamento - \${r.cliente}</title>
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+            <style>
+                body { font-family: 'Inter', sans-serif; padding: 20px; color: #0f172a; line-height: 1.5; background: #fff; }
+                .print-doc { max-width: 800px; margin: 0 auto; border: 1px solid #e2e8f0; padding: 40px; border-radius: 12px; }
+                .print-doc-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #10b981; padding-bottom: 20px; margin-bottom: 30px; }
+                .print-company-name { font-size: 24px; font-weight: 800; color: #10b981; margin: 0; }
+                .print-company-sub { font-size: 12px; color: #64748b; margin-top: 4px; }
+                .print-doc-number { text-align: right; }
+                .print-doc-number h2 { font-size: 22px; margin: 0; color: #0f172a; }
+                .print-doc-number span { font-size: 12px; color: #64748b; }
+                .receipt-body { font-size: 15px; margin: 40px 0; text-align: justify; line-height: 1.8; }
+                .print-total-box { background: #f0fdf4; border: 2px dashed #10b981; color: #065f46; padding: 16px 24px; border-radius: 8px; text-align: center; margin: 30px 0; font-size: 24px; font-weight: 800; }
+                .print-signatures { display: flex; flex-direction: column; align-items: center; margin-top: 60px; }
+                .signature-line { border-top: 1px solid #0f172a; width: 50%; padding-top: 8px; font-size: 12px; color: #64748b; text-align: center; }
+                .print-footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; text-align: center; }
+                .no-print-btn { background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; margin-bottom: 20px; font-family: 'Inter', sans-serif; font-size: 13px; }
+                @media print { .no-print-btn { display: none; } body { padding: 0; } .print-doc { border: none; padding: 0; } }
+            </style>
+        </head>
+        <body>
+            <div style="max-width: 800px; margin: 0 auto; text-align: right;">
+                <button class="no-print-btn" onclick="window.print()">Imprimir Recibo / Salvar PDF</button>
+            </div>
+            <div class="print-doc">
+                <div class="print-doc-header">
+                    <div>
+                        <h1 class="print-company-name">\${state.companyName}</h1>
+                        <div class="print-company-sub">CNPJ: \${state.companyCnpj}</div>
+                    </div>
+                    <div class="print-doc-number">
+                        <h2>RECIBO DE PAGAMENTO</h2>
+                        <span>Emitido em: \${formatDateBR(r.data)}</span>
+                    </div>
+                </div>
+
+                <div class="print-total-box">
+                    VALOR: \${formatCurrency(r.valor)}
+                </div>
+
+                <div class="receipt-body">
+                    Recebemos de <strong>\${r.cliente}</strong>, a importância de <strong>\${formatCurrency(r.valor)}</strong>, referente a:<br>
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 14px; border-radius: 6px; margin: 15px 0; font-style: italic;">
+                        \${r.descricao}
+                    </div>
+                    Para maior clareza, firmamos o presente recibo com quitação total do valor descrito acima, recebido via <strong>\${r.pagamento}</strong>.
+                    \${r.obs ? \`<br><br><strong>Observação:</strong> \${r.obs}\` : ''}
+                </div>
+
+                <div class="print-signatures">
+                    <div style="height:60px"></div>
+                    <div class="signature-line">
+                        <strong>\${state.companyName}</strong><br>
+                        Emitente do Recibo
+                    </div>
+                </div>
+
+                <div class="print-footer">
+                    Recibo emitido eletronicamente em \${new Date().toLocaleDateString("pt-BR")}.
+                </div>
+            </div>
+        </body>
+        </html>
+    \`);
+    printWindow.document.close();
 }
 
 // --- VIEW: PRODUÇÃO (KANBAN) ---
@@ -1408,84 +1812,37 @@ function handleOSFinish(os) {
     }
 }
 
-// 6. MOTOR DE ASSISTENTE DE IA HEURÍSTICO
-function processAIChat(question) {
-    const q = question.toLowerCase();
-    let reply = "";
+// 6. MOTOR DE ASSISTENTE DE IA REAL DO GEMINI
+async function processAIChat(question) {
+    const context = {
+        empresa: { nome: state.companyName, cnpj: state.companyCnpj },
+        clientes: state.clientes.map(c => ({ nome: c.nome, responsavel: c.responsavel, cidade: c.cidade })),
+        fornecedores: state.fornecedores.map(f => ({ nome: f.nome, insumos: f.insumos })),
+        funcionarios: state.funcionarios.map(f => ({ nome: f.nome, cargo: f.cargo, salario: f.salario, custoHora: f.custoHora })),
+        materiais_estoque: state.materiais.map(m => ({ codigo: m.codigo, nome: m.nome, quantidade: m.quantidade, unidade: m.unidade, precoCompra: m.precoCompra, precoVenda: m.precoVenda, min: m.qtdMinima })),
+        financeiro: state.financeiro.map(f => ({ data: f.data, descricao: f.descricao, tipo: f.tipo, categoria: f.categoria, valor: f.valor, pago: f.pago, centroCusto: f.centroCusto })),
+        orcamentos: state.orcamentos.map(o => ({ data: o.data, cliente: o.cliente, produto: o.produto, valorFinal: o.valorFinal, status: o.status })),
+        ordens_servico: state.ordens_servico.map(o => ({ numero: o.numero, cliente: o.cliente, descricao: o.descricao, prazo: o.prazo, responsavel: o.responsavel, valorTotal: o.valorTotal, status: o.status, financeiroStatus: o.financeiroStatus })),
+        metas: state.metas
+    };
 
-    if (q.includes("cliente") && (q.includes("lucro") || q.includes("mais"))) {
-        const maiorCli = getMaiorClienteFaturamento();
-        if (maiorCli && maiorCli !== "-") {
-            reply = `O cliente com maior faturamento é **${maiorCli}**, com base em faturamentos confirmados.`;
-        } else {
-            reply = "Ainda não possuo ordens de serviço finalizadas com faturamento para calcular o maior cliente.";
-        }
-    } 
-    else if (q.includes("material") && (q.includes("mais") || q.includes("utilizo") || q.includes("uso"))) {
-        const consumos = {};
-        state.ordens_servico.forEach(os => {
-            if (os.materiaisUtilizados) {
-                os.materiaisUtilizados.forEach(m => {
-                    consumos[m.nome] = (consumos[m.nome] || 0) + m.quantidade;
-                });
-            }
-        });
+    const systemPrompt = `Você é a IA assistente oficial do ERP Metal Print Finance (Comunicação Visual).
+Você tem acesso a todos os dados do sistema em tempo real em formato JSON abaixo.
+Sua missão é responder a qualquer pergunta do usuário sobre finanças, estoque, ordens de serviço, clientes, etc., de forma direta, clara e profissional.
+Use formatação Markdown simples nas respostas (negrito, listas, etc.). Quando o usuário fizer perguntas que exijam cálculos (como lucro, totais, maiores faturamentos, atrasos), faça as contas com base nos dados reais fornecidos abaixo e dê a resposta exata.
 
-        const sorted = Object.entries(consumos).sort((a, b) => b[1] - a[1]);
-        if (sorted.length > 0) {
-            reply = `O insumo mais consumido na sua gráfica é **${sorted[0][0]}**, totalizando **${sorted[0][1].toFixed(1)} unidades/m²** nas OSs.`;
-        } else {
-            reply = "Não detectei consumo de materiais associados a ordens de serviço.";
-        }
-    } 
-    else if (q.includes("gastar") || q.includes("quanto posso") || q.includes("saldo")) {
-        let saldo = 0;
-        state.financeiro.forEach(f => {
-            if (f.pago) {
-                saldo += f.tipo === "Receita" ? parseFloat(f.valor) : -parseFloat(f.valor);
-            }
-        });
-        
-        reply = `Seu saldo líquido atual é de **${formatCurrency(saldo)}**.`;
-        if (saldo <= 0) {
-            reply += " Cuidado! Seu caixa está no vermelho. Reduza despesas variáveis imediatamente.";
-        }
-    } 
-    else if (q.includes("vender") || q.includes("meta")) {
-        const inicioMes = getInicioMes();
-        const receitasNoMes = state.financeiro.filter(f => f.tipo === "Receita" && f.pago && f.data >= inicioMes).reduce((acc, curr) => acc + (parseFloat(curr.valor) || 0), 0);
-        const meta = state.metas.mensal;
-        const restante = meta - receitasNoMes;
-        
-        if (restante <= 0) {
-            reply = `Meta batida! Você faturou **${formatCurrency(receitasNoMes)}** contra a meta mensal de **${formatCurrency(meta)}**.`;
-        } else {
-            reply = `Você realizou **${formatCurrency(receitasNoMes)}** este mês. Faltam **${formatCurrency(restante)}** para atingir a meta mensal de **${formatCurrency(meta)}**.`;
-        }
-    } 
-    else if (q.includes("fornecedor")) {
-        const maiorFor = getMaiorFornecedorFinanceiro();
-        if (maiorFor && maiorFor !== "-") {
-            reply = `Seu maior volume de compra foi com o fornecedor **${maiorFor}**.`;
-        } else {
-            reply = "Sem lançamentos de compras de fornecedores cadastrados.";
-        }
-    } 
-    else if (q.includes("atrasada") || q.includes("atraso") || q.includes("prazo")) {
-        const hoje = new Date().toISOString().split("T")[0];
-        const atrasadas = state.ordens_servico.filter(o => o.status !== "Finalizado" && o.status !== "Cancelado" && o.prazo < hoje);
-        
-        if (atrasadas.length > 0) {
-            reply = `Existem **${atrasadas.length} ordens de serviço atrasadas**! Fique atento às ordens: ${atrasadas.map(o => o.numero).join(", ")}.`;
-        } else {
-            reply = "Todas as suas ordens de serviço ativas estão dentro do prazo de entrega.";
-        }
-    } 
-    else {
-        reply = "Olá! Não identifiquei uma dúvida exata. Pergunte-me sobre faturamento, ordens de serviço atrasadas, uso de materiais, saldo do caixa ou meta de faturamento.";
+Dados atuais do ERP:
+${JSON.stringify(context, null, 2)}
+
+Pergunta do usuário: "${question}"
+Resposta:`;
+
+    try {
+        return await callGeminiAPI(systemPrompt);
+    } catch (e) {
+        console.error("Erro na resposta do Gemini:", e);
+        return "Desculpe, tive um problema ao me conectar com a IA do Gemini. Verifique sua conexão ou tente novamente.";
     }
-
-    return reply;
 }
 
 // 7. AUXILIARES E CONVERSORES
@@ -1681,7 +2038,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Ações Rápidas
     document.getElementById("qa-new-os").addEventListener("click", (e) => { e.preventDefault(); openOSModal(); });
-    document.getElementById("qa-new-budget").addEventListener("click", (e) => { e.preventDefault(); state.activeTab = "calculadora"; renderActiveTab(); });
+    document.getElementById("qa-new-budget").addEventListener("click", (e) => { e.preventDefault(); openBudgetModal(); });
     document.getElementById("qa-new-transaction").addEventListener("click", (e) => { e.preventDefault(); openTransactionModal(); });
     document.getElementById("qa-new-client").addEventListener("click", (e) => { e.preventDefault(); openClientModal(); });
     document.getElementById("qa-new-material").addEventListener("click", (e) => { e.preventDefault(); openMaterialModal(); });
@@ -1698,7 +2055,8 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("btn-novo-material").addEventListener("click", () => openMaterialModal());
     document.getElementById("btn-novo-produto").addEventListener("click", () => openProductModal());
     document.getElementById("btn-nova-os").addEventListener("click", () => openOSModal());
-    document.getElementById("btn-novo-orcamento").addEventListener("click", () => { state.activeTab = "calculadora"; renderActiveTab(); });
+    document.getElementById("btn-novo-orcamento").addEventListener("click", () => openBudgetModal());
+    document.getElementById("btn-novo-recibo").addEventListener("click", () => openReceiptModal());
 
     // Fechar modais genéricos
     document.querySelectorAll("[data-close]").forEach(btn => {
@@ -1708,50 +2066,235 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // Lógicas de Calculadora e Input
-    document.querySelectorAll("#view-calculadora input, #view-calculadora select").forEach(input => {
-        input.addEventListener("input", recalculateVisualPrice);
-    });
-    
-    document.getElementById("calc-btn-limpar").addEventListener("click", () => {
-        document.getElementById("calc-largura").value = "1.00";
-        document.getElementById("calc-altura").value = "1.00";
-        document.getElementById("calc-quantidade").value = "1";
-        document.getElementById("calc-margem").value = "50";
-        document.getElementById("calc-instalacao").value = "0";
-        document.getElementById("calc-frete").value = "0";
-        recalculateVisualPrice();
-    });
+    // Lógica do Modal de Orçamento com IA e Múltiplos Materiais
+    document.getElementById("orc-btn-add-material").addEventListener("click", () => {
+        const matSel = document.getElementById("orc-material-sel");
+        if (state.materiais.length === 0 || matSel.value === "") return;
 
-    document.getElementById("calc-btn-salvar-orcamento").addEventListener("click", () => {
-        const matSelect = document.getElementById("calc-material");
-        if (state.materiais.length === 0 || matSelect.value === "") {
-            alert("Cadastre materiais no estoque antes de realizar orçamentos.");
+        const matId = matSel.value;
+        const qtd = parseFloat(document.getElementById("orc-material-qtd").value) || 0;
+        if (qtd <= 0) {
+            alert("Informe uma quantidade de consumo.");
             return;
         }
-        
-        const clienteNome = prompt("Informe o nome do Cliente para este orçamento:");
-        if (!clienteNome) return;
+
+        const material = state.materiais.find(m => m.id === matId);
+        if (material) {
+            state.orcMateriaisVinculados.push({
+                codigo: material.codigo,
+                nome: material.nome,
+                quantidade: qtd,
+                preco: material.precoCompra,
+                total: qtd * material.precoCompra
+            });
+            renderOrcMaterialsTable();
+        }
+    });
+
+    document.getElementById("orc-btn-calcular-ia").addEventListener("click", async () => {
+        const largura = parseFloat(document.getElementById("orc-largura").value) || 1;
+        const altura = parseFloat(document.getElementById("orc-altura").value) || 1;
+        const quantidade = parseInt(document.getElementById("orc-quantidade").value, 10) || 1;
+        const margem = parseFloat(document.getElementById("orc-margem").value) || 50;
+        const materiais = state.orcMateriaisVinculados;
+
+        const section = document.getElementById("ai-calc-section");
+        const loader = document.getElementById("ai-calc-loading");
+        const resultDiv = document.getElementById("ai-calc-result");
+
+        section.style.display = "block";
+        loader.style.display = "inline-block";
+        resultDiv.innerHTML = "Calculando e analisando com a IA do Gemini...";
+
+        const prompt = `Você é um especialista em orçamento e custos de Comunicação Visual.
+Calcule o preço de venda sugerido para uma placa/peça com as seguintes especificações:
+- Largura: ${largura} metros
+- Altura: ${altura} metros
+- Quantidade: ${quantidade} peças
+- Margem de Lucro Desejada: ${margem}%
+- Materiais que serão utilizados:
+${JSON.stringify(materiais, null, 2)}
+
+Considere a área quadrada total da peça (${largura * altura}m² por peça). Considere uma perda padrão de 10% na matéria-prima.
+Calcule:
+1. Área Total do Serviço (largura * altura * quantidade)
+2. Custo Total de Matéria-Prima
+3. Custo estimado de Produção/Impressão/Acabamento (estime R$ 15,00 por m² de custo de impressão/mão de obra se não especificado)
+4. Custo Total Operacional (Matéria-prima + Produção)
+5. Preço Sugerido de Venda com base na margem de lucro desejada (Fórmula: Custo Total / (1 - margem/100))
+6. Lucro Bruto Estimado e a Margem Efetiva.
+
+Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos de código markdown ou texto extra, para que eu possa fazer o parse no JavaScript do ERP:
+{
+  "areaTotal": 0.00,
+  "custoMaterial": 0.00,
+  "custoProducao": 0.00,
+  "custoTotal": 0.00,
+  "precoSugerido": 0.00,
+  "lucroEstimado": 0.00,
+  "margemEfetiva": 0,
+  "tempoProducaoDias": 1.5,
+  "explicacao": "Escreva aqui uma explicação detalhada e bonita passo a passo para o cliente e o vendedor entenderem o preço."
+}`;
+
+        try {
+            const rawResponse = await callGeminiAPI(prompt);
+            loader.style.display = "none";
+            
+            let cleanText = rawResponse.trim();
+            if (cleanText.startsWith("```")) {
+                cleanText = cleanText.replace(/^```json/, "").replace(/```$/, "").trim();
+            }
+            
+            const res = JSON.parse(cleanText);
+            
+            // Armazenar os valores calculados na sessão do modal para salvamento posterior
+            document.getElementById("orc-btn-salvar").dataset.valCalculado = JSON.stringify(res);
+
+            resultDiv.innerHTML = `
+                <div class="result-grid">
+                    <div class="result-item">
+                        <div class="result-label">Área Total</div>
+                        <div class="result-value primary">${res.areaTotal.toFixed(2)} m²</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Custo Matéria-Prima</div>
+                        <div class="result-value danger">${formatCurrency(res.custoMaterial)}</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Custo Operacional Total</div>
+                        <div class="result-value danger">${formatCurrency(res.custoTotal)}</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Preço de Venda Recomendado</div>
+                        <div class="result-value">${formatCurrency(res.precoSugerido)}</div>
+                    </div>
+                </div>
+                <div style="margin-top:16px; border-top: 1px solid rgba(255,255,255,0.08); padding-top:12px;">
+                    <strong>Explicação do Orçamento:</strong>
+                    <p style="margin-top:6px; color:#cbd5e1;">${res.explicacao}</p>
+                </div>
+            `;
+        } catch (e) {
+            console.error(e);
+            loader.style.display = "none";
+            resultDiv.innerHTML = `<span class="text-danger">Erro ao processar orçamento com IA: ${e.message}. Você ainda pode preencher e salvar manualmente.</span>`;
+        }
+    });
+
+    document.getElementById("orc-btn-salvar").addEventListener("click", () => {
+        const cliente = document.getElementById("orc-cliente").value;
+        const descricao = document.getElementById("orc-descricao").value;
+        const largura = parseFloat(document.getElementById("orc-largura").value) || 1;
+        const altura = parseFloat(document.getElementById("orc-altura").value) || 1;
+        const quantidade = parseInt(document.getElementById("orc-quantidade").value, 10) || 1;
+        const validade = document.getElementById("orc-validade").value;
+
+        if (!cliente || !descricao) {
+            alert("Informe o Cliente e a Descrição do Serviço.");
+            return;
+        }
+
+        let valores = {
+            areaTotal: largura * altura * quantidade,
+            custoMaterial: state.orcMateriaisVinculados.reduce((acc, c) => acc + c.total, 0),
+            custoProducao: (largura * altura * quantidade) * 15,
+            precoSugerido: 0,
+            custoTotal: 0,
+            lucroEstimado: 0
+        };
+
+        valores.custoTotal = valores.custoMaterial + valores.custoProducao;
+        const margem = parseFloat(document.getElementById("orc-margem").value) || 50;
+        valores.precoSugerido = valores.custoTotal / (1 - (margem / 100));
+        valores.lucroEstimado = valores.precoSugerido - valores.custoTotal;
+
+        const dataCalculada = document.getElementById("orc-btn-salvar").dataset.valCalculado;
+        if (dataCalculada) {
+            const parsed = JSON.parse(dataCalculada);
+            valores.precoSugerido = parsed.precoSugerido;
+            valores.custoTotal = parsed.custoTotal;
+        }
 
         const orc = {
             data: new Date().toISOString().split("T")[0],
-            cliente: clienteNome,
-            produto: "Trabalho Sob Medida",
-            largura: parseFloat(document.getElementById("calc-largura").value) || 1,
-            altura: parseFloat(document.getElementById("calc-altura").value) || 1,
-            quantidade: parseInt(document.getElementById("calc-quantidade").value, 10) || 1,
-            acabamento: document.getElementById("calc-acabamento").value,
-            instalacao: parseFloat(document.getElementById("calc-instalacao").value) || 0,
-            frete: parseFloat(document.getElementById("calc-frete").value) || 0,
-            valorSugerido: parseFloat(document.getElementById("calc-res-preço-sugerido").textContent.replace(/[R$\s]/g, '').replace(',', '.')) || 0,
-            valorFinal: parseFloat(document.getElementById("calc-res-preço-sugerido").textContent.replace(/[R$\s]/g, '').replace(',', '.')) || 0,
+            cliente: cliente,
+            produto: descricao,
+            largura: largura,
+            altura: altura,
+            quantidade: quantidade,
+            materiaisUtilizados: state.orcMateriaisVinculados,
+            valorSugerido: valores.precoSugerido,
+            valorFinal: valores.precoSugerido,
+            validade: validade,
             status: "Pendente"
         };
 
         dbSave("orcamentos", orc);
-        alert("Orçamento salvo na base de dados com status Pendente!");
+        document.getElementById("modal-orcamento").classList.remove("show");
+        alert("Orçamento inteligente criado com sucesso!");
         state.activeTab = "orçamentos";
         renderActiveTab();
+    });
+
+    // Lógica do Modal de Recibo
+    document.getElementById("form-recibo").addEventListener("submit", (e) => {
+        e.preventDefault();
+        
+        let rId = document.getElementById("recibo-id").value;
+        if (!rId) {
+            rId = "receipt_" + Date.now();
+        }
+
+        const recibo = {
+            id: rId,
+            cliente: document.getElementById("recibo-cliente").value,
+            data: document.getElementById("recibo-data").value,
+            descricao: document.getElementById("recibo-descricao").value,
+            valor: parseFloat(document.getElementById("recibo-valor").value) || 0,
+            pagamento: document.getElementById("recibo-pagamento").value,
+            obs: document.getElementById("recibo-obs").value
+        };
+
+        dbSave("recibos", recibo);
+        document.getElementById("modal-recibo").classList.remove("show");
+        alert("Recibo salvo com sucesso!");
+        
+        // Abrir PDF do recibo logo após salvar
+        generateReceiptPDF(recibo.id);
+        
+        state.activeTab = "recibos";
+        renderActiveTab();
+    });
+
+    document.getElementById("btn-preview-recibo").addEventListener("click", () => {
+        const cliente = document.getElementById("recibo-cliente").value;
+        const data = document.getElementById("recibo-data").value;
+        const descricao = document.getElementById("recibo-descricao").value;
+        const valor = parseFloat(document.getElementById("recibo-valor").value) || 0;
+        const pagamento = document.getElementById("recibo-pagamento").value;
+        const obs = document.getElementById("recibo-obs").value;
+
+        if (!cliente || !descricao || valor <= 0) {
+            alert("Preencha todos os campos do recibo para visualizar.");
+            return;
+        }
+
+        const tempRecibo = {
+            id: "temp_rec",
+            cliente,
+            data,
+            descricao,
+            valor,
+            pagamento,
+            obs
+        };
+
+        // Salvar temporariamente no state para renderizar
+        const originalRecibos = state.recibos;
+        state.recibos = [tempRecibo, ...state.recibos];
+        generateReceiptPDF("temp_rec");
+        state.recibos = originalRecibos;
     });
 
     // Submits de Formulários
@@ -1948,7 +2491,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const inputField = document.getElementById("ai-panel-input-field");
     const chatMsgs = document.getElementById("ai-chat-messages");
 
-    function handleAISend() {
+    async function handleAISend() {
         const text = inputField.value.trim();
         if (!text) return;
 
@@ -1956,11 +2499,16 @@ document.addEventListener("DOMContentLoaded", () => {
         inputField.value = "";
         chatMsgs.scrollTop = chatMsgs.scrollHeight;
 
-        setTimeout(() => {
-            const answer = processAIChat(text);
-            chatMsgs.innerHTML += `<div class="ai-message ai-bot">${answer}</div>`;
-            chatMsgs.scrollTop = chatMsgs.scrollHeight;
-        }, 200);
+        chatMsgs.innerHTML += `<div class="ai-message ai-bot" id="temp-bot-loading">Pensando...</div>`;
+        chatMsgs.scrollTop = chatMsgs.scrollHeight;
+
+        const answer = await processAIChat(text);
+        
+        const loadingDiv = document.getElementById("temp-bot-loading");
+        if (loadingDiv) loadingDiv.remove();
+
+        chatMsgs.innerHTML += `<div class="ai-message ai-bot">${answer}</div>`;
+        chatMsgs.scrollTop = chatMsgs.scrollHeight;
     }
     sendBtn.addEventListener("click", handleAISend);
     inputField.addEventListener("keypress", (e) => { if (e.key === "Enter") handleAISend(); });
@@ -1968,7 +2516,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const dashAiSend = document.getElementById("ai-dash-send");
     const dashAiInput = document.getElementById("ai-dash-input");
     
-    function handleDashAISend() {
+    async function handleDashAISend() {
         const val = dashAiInput.value.trim();
         if (!val) return;
         
@@ -1976,7 +2524,14 @@ document.addEventListener("DOMContentLoaded", () => {
         chatMsgs.innerHTML += `<div class="ai-message ai-user">${val}</div>`;
         dashAiInput.value = "";
         
-        const answer = processAIChat(val);
+        chatMsgs.innerHTML += `<div class="ai-message ai-bot" id="temp-bot-loading">Pensando...</div>`;
+        chatMsgs.scrollTop = chatMsgs.scrollHeight;
+
+        const answer = await processAIChat(val);
+        
+        const loadingDiv = document.getElementById("temp-bot-loading");
+        if (loadingDiv) loadingDiv.remove();
+
         chatMsgs.innerHTML += `<div class="ai-message ai-bot">${answer}</div>`;
         chatMsgs.scrollTop = chatMsgs.scrollHeight;
     }
@@ -1987,11 +2542,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     document.querySelectorAll(".ai-suggest-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", async () => {
             const queryText = btn.textContent;
             aiPanel.classList.add("show");
             chatMsgs.innerHTML += `<div class="ai-message ai-user">${queryText}</div>`;
-            const answer = processAIChat(queryText);
+            
+            chatMsgs.innerHTML += `<div class="ai-message ai-bot" id="temp-bot-loading">Pensando...</div>`;
+            chatMsgs.scrollTop = chatMsgs.scrollHeight;
+
+            const answer = await processAIChat(queryText);
+            
+            const loadingDiv = document.getElementById("temp-bot-loading");
+            if (loadingDiv) loadingDiv.remove();
+
             chatMsgs.innerHTML += `<div class="ai-message ai-bot">${answer}</div>`;
             chatMsgs.scrollTop = chatMsgs.scrollHeight;
         });

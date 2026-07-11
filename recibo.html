@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recibo de Pagamento | Metal Print Finance</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --color-primary: #5925e0;
+            --color-primary-hover: #481cbd;
+            --color-success: #10b981;
+            --color-dark: #0f172a;
+            --color-light: #f8fafc;
+            --color-border: #e2e8f0;
+            --color-text: #334155;
+            --color-text-light: #64748b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--color-light);
+            color: var(--color-text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .receipt-container {
+            background-color: #ffffff;
+            width: 100%;
+            max-width: 700px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--color-border);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Top Accent Bar */
+        .receipt-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--color-primary), #a855f7);
+        }
+
+        .receipt-header {
+            padding: 30px 40px;
+            border-bottom: 1px dashed var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            background-color: var(--color-primary);
+            color: #ffffff;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--color-dark);
+        }
+
+        .logo-subtitle {
+            font-size: 11px;
+            color: var(--color-primary);
+            font-weight: 600;
+            display: block;
+            margin-top: -2px;
+        }
+
+        .receipt-title {
+            text-align: right;
+        }
+
+        .receipt-title h1 {
+            font-size: 22px;
+            color: var(--color-dark);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .receipt-number {
+            font-size: 13px;
+            color: var(--color-text-light);
+            margin-top: 4px;
+        }
+
+        .receipt-body {
+            padding: 40px;
+        }
+
+        .receipt-alert {
+            background-color: rgba(16, 185, 129, 0.05);
+            border: 1px solid rgba(16, 185, 129, 0.15);
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--color-success);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .receipt-details {
+            margin-bottom: 35px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: var(--color-text-light);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .detail-val {
+            color: var(--color-dark);
+            font-size: 14px;
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .receipt-description {
+            background-color: #f8fafc;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 30px;
+            border: 1px solid var(--color-border);
+        }
+
+        .description-title {
+            font-size: 13px;
+            text-transform: uppercase;
+            color: var(--color-text-light);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .description-content {
+            font-size: 15px;
+            line-height: 1.6;
+            color: var(--color-dark);
+            white-space: pre-line;
+        }
+
+        .receipt-amount-box {
+            background: linear-gradient(135deg, var(--color-dark), #1e293b);
+            color: #ffffff;
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 35px;
+        }
+
+        .amount-label {
+            font-size: 14px;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+        .amount-value {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .receipt-footer {
+            padding: 30px 40px;
+            background-color: #f8fafc;
+            border-top: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-info {
+            font-size: 12px;
+            color: var(--color-text-light);
+            line-height: 1.5;
+        }
+
+        .actions-bar {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--color-primary-hover);
+        }
+
+        .btn-outline {
+            background-color: #ffffff;
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-outline:hover {
+            background-color: #f1f5f9;
+        }
+
+        /* Loading / Error States */
+        .loading-screen, .error-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--color-border);
+            border-top: 4px solid var(--color-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-icon {
+            color: #ef4444;
+            margin-bottom: 16px;
+        }
+
+        /* Print styling */
+        @media print {
+            body {
+                background-color: #ffffff;
+                padding: 0;
+            }
+            .receipt-container {
+                box-shadow: none;
+                border: none;
+                max-width: 100%;
+            }
+            .receipt-container::before {
+                display: none;
+            }
+            .actions-bar, .receipt-footer {
+                display: none !important;
+            }
+            .receipt-body {
+                padding: 20px 0;
+            }
+            .receipt-header {
+                padding: 20px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="receipt-container" id="app">
+        <!-- Loader State -->
+        <div class="loading-screen" id="loader">
+            <div class="spinner"></div>
+            <h3>Carregando Recibo...</h3>
+            <p style="color: var(--color-text-light); margin-top: 8px;">Buscando dados no servidor seguro</p>
+        </div>
+
+        <!-- Error State -->
+        <div class="error-screen" id="error-screen" style="display: none;">
+            <div class="error-icon"><i data-lucide="alert-circle" style="width: 48px; height: 48px;"></i></div>
+            <h3 id="error-title">Recibo não encontrado</h3>
+            <p id="error-desc" style="color: var(--color-text-light); margin-top: 8px; margin-bottom: 24px;">Verifique se a URL está correta ou se o recibo foi removido.</p>
+        </div>
+
+        <!-- Receipt Content -->
+        <div id="receipt-content" style="display: none;">
+            <div class="receipt-header">
+                <div class="logo-section">
+                    <div class="logo-icon">
+                        <i data-lucide="layers"></i>
+                    </div>
+                    <div>
+                        <span class="logo-title" id="company-name">Metal Print</span>
+                        <span class="logo-subtitle">Visual Communication</span>
+                    </div>
+                </div>
+                <div class="receipt-title">
+                    <h1>Recibo</h1>
+                    <div class="receipt-number" id="receipt-num">Nº REC-0000</div>
+                </div>
+            </div>
+
+            <div class="receipt-body">
+                <div class="receipt-alert">
+                    <i data-lucide="check-circle-2"></i>
+                    <span>COMPROVANTE DE PAGAMENTO CONFIRMADO</span>
+                </div>
+
+                <div class="receipt-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Emissor:</span>
+                        <span class="detail-val" id="issuer-name">-</span>
+                    </div>
+                    <div class="detail-row" id="cnpj-row">
+                        <span class="detail-label">CNPJ Emissor:</span>
+                        <span class="detail-val" id="issuer-cnpj">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Cliente / Pagador:</span>
+                        <span class="detail-val" id="client-name">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Data de Emissão:</span>
+                        <span class="detail-val" id="receipt-date">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Forma de Pagamento:</span>
+                        <span class="detail-val" id="payment-method">-</span>
+                    </div>
+                </div>
+
+                <div class="receipt-description">
+                    <div class="description-title">Descrição dos Serviços / Materiais</div>
+                    <div class="description-content" id="receipt-desc">-</div>
+                </div>
+
+                <div class="receipt-amount-box">
+                    <span class="amount-label">Valor Total Pago</span>
+                    <span class="amount-value" id="receipt-val">R$ 0,00</span>
+                </div>
+
+                <div class="actions-bar">
+                    <button class="btn btn-primary" onclick="window.print()">
+                        <i data-lucide="printer" style="width: 16px; height: 16px;"></i> Imprimir Recibo
+                    </button>
+                    <button class="btn btn-outline" id="btn-whatsapp">
+                        <i data-lucide="share-2" style="width: 16px; height: 16px;"></i> Compartilhar
+                    </button>
+                </div>
+            </div>
+
+            <div class="receipt-footer">
+                <div class="footer-info">
+                    <p>Este recibo é gerado eletronicamente pelo sistema Metal Print Finance.</p>
+                    <p style="margin-top: 4px;">Obrigado pela preferência e parceria!</p>
+                </div>
+                <div style="font-size: 11px; color: var(--color-text-light); text-align: right;">
+                    Documento digital certificado
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK (Compat Version) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Configuração Firebase do Usuário
+        const firebaseConfig = {
+            apiKey: "AIzaSyA_IIOZ9J3YvrWr__ipeoolT6m1bGQ82kk",
+            authDomain: "metal-print-a099b.firebaseapp.com",
+            databaseURL: "https://metal-print-a099b-default-rtdb.firebaseio.com",
+            projectId: "metal-print-a099b",
+            storageBucket: "metal-print-a099b.firebasestorage.app",
+            messagingSenderId: "521510301351",
+            appId: "1:521510301351:web:49016ec1da1058e35db582",
+            measurementId: "G-6P0TDTDXML"
+        };
+
+        // Auxiliares
+        function formatCurrency(val) {
+            return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val || 0);
+        }
+        function formatDateBR(dateStr) {
+            if (!dateStr) return "-";
+            const parts = dateStr.split("-");
+            if (parts.length !== 3) return dateStr;
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            lucide.createIcons();
+
+            // 1. Inicializar Firebase
+            let db = null;
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+            } catch (e) {
+                console.error("Falha ao inicializar o Firebase:", e);
+                showError("Erro de Conexão", "Não foi possível conectar ao banco de dados em nuvem.");
+                return;
+            }
+
+            // 2. Extrair ID do Recibo dos Parâmetros da URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const reciboId = urlParams.get('id');
+
+            if (!reciboId) {
+                showError("Link Inválido", "O código identificador do recibo não foi informado na URL.");
+                return;
+            }
+
+            // 3. Carregar o Recibo
+            try {
+                const docRef = db.collection("recibos").doc(reciboId);
+                const docSnap = await docRef.get();
+
+                if (!docSnap.exists) {
+                    showError("Recibo não encontrado", "O recibo solicitado não existe ou foi removido da base de dados.");
+                    return;
+                }
+
+                const recibo = docSnap.data();
+
+                // 4. Renderizar dados na tela
+                document.getElementById("company-name").textContent = recibo.companyName || "Metal Print";
+                document.getElementById("receipt-num").textContent = `Nº ${recibo.numero || "REC-" + reciboId.substring(reciboId.length - 6)}`;
+                document.getElementById("issuer-name").textContent = recibo.companyName || "Metal Print Comunicação Visual";
+                
+                if (recibo.companyCnpj) {
+                    document.getElementById("issuer-cnpj").textContent = recibo.companyCnpj;
+                } else {
+                    document.getElementById("cnpj-row").style.display = "none";
+                }
+
+                document.getElementById("client-name").textContent = recibo.cliente || "-";
+                document.getElementById("receipt-date").textContent = formatDateBR(recibo.data) || "-";
+                document.getElementById("payment-method").textContent = recibo.metodoPagamento || "PIX";
+                document.getElementById("receipt-desc").textContent = recibo.descricao || "";
+                document.getElementById("receipt-val").textContent = formatCurrency(recibo.valor);
+
+                // Configurar WhatsApp Share
+                const shareText = encodeURIComponent(`Olá! Segue o recibo de pagamento confirmado da Metal Print:\nValor: ${formatCurrency(recibo.valor)}\nVisualizar: ${window.location.href}`);
+                document.getElementById("btn-whatsapp").addEventListener("click", () => {
+                    window.open(`https://api.whatsapp.com/send?text=${shareText}`, '_blank');
+                });
+
+                // Ocultar loader e mostrar conteúdo
+                document.getElementById("loader").style.display = "none";
+                document.getElementById("receipt-content").style.display = "block";
+                lucide.createIcons();
+
+                // 5. Incrementar Visualizações e Atualizar Status (Quente/Frio/Morno) no Firebase
+                const viewsCount = (recibo.visualizacoes || 0) + 1;
+                
+                // Salvar visualização no Firestore
+                await docRef.update({
+                    visualizacoes: viewsCount,
+                    ultimaVisualizacao: new Date().toISOString()
+                });
+
+                // Registrar o histórico detalhado para sabermos quem viu
+                await db.collection("visualizacoes_recibos").add({
+                    reciboId: reciboId,
+                    timestamp: new Date().toISOString(),
+                    device: navigator.userAgent
+                });
+
+                console.log(`Visualização registrada. Total: ${viewsCount}`);
+
+            } catch (err) {
+                console.error("Erro ao buscar o recibo:", err);
+                showError("Erro de Servidor", "Ocorreu uma falha interna ao tentar recuperar as informações do recibo.");
+            }
+        });
+
+        function showError(title, desc) {
+            document.getElementById("loader").style.display = "none";
+            document.getElementById("receipt-content").style.display = "none";
+            
+            const errScreen = document.getElementById("error-screen");
+            errScreen.style.display = "flex";
+            document.getElementById("error-title").textContent = title;
+            document.getElementById("error-desc").textContent = desc;
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>

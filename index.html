@@ -92,6 +92,9 @@
                     <a href="#" class="nav-item" data-tab="orçamentos">
                         <i data-lucide="calculator"></i> Orçamentos
                     </a>
+                    <a href="#" class="nav-item" data-tab="recibos">
+                        <i data-lucide="receipt"></i> Recibos
+                    </a>
                     <a href="#" class="nav-item" data-tab="producao">
                         <i data-lucide="factory"></i> Produção
                     </a>
@@ -812,7 +815,7 @@
                     <div class="action-bar">
                         <input type="text" id="orc-search" class="form-control w-300" placeholder="Buscar orçamentos...">
                         <button class="btn btn-primary btn-icon-text" id="btn-novo-orcamento">
-                            <i data-lucide="plus"></i> Novo Orçamento Inteligente
+                            <i data-lucide="sparkles"></i> Novo Orçamento com IA
                         </button>
                     </div>
 
@@ -823,11 +826,41 @@
                                     <tr>
                                         <th>Data</th>
                                         <th>Cliente</th>
-                                        <th>Produto/Serviço</th>
+                                        <th>Serviço/Produto</th>
                                         <th>Dimensões (m)</th>
-                                        <th>Valor Sugerido</th>
                                         <th>Preço Final</th>
                                         <th>Status</th>
+                                        <th>Interesse (Views)</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 15b. RECIBOS VIEW -->
+                <section id="view-recibos" class="view-section">
+                    <div class="action-bar">
+                        <input type="text" id="rec-recibo-search" class="form-control w-300" placeholder="Buscar recibo por cliente...">
+                        <button class="btn btn-primary btn-icon-text" id="btn-novo-recibo">
+                            <i data-lucide="receipt"></i> Gerar Recibo
+                        </button>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="table-responsive">
+                            <table class="table" id="table-recibos">
+                                <thead>
+                                    <tr>
+                                        <th>Nº Recibo</th>
+                                        <th>Data</th>
+                                        <th>Cliente</th>
+                                        <th>Descrição</th>
+                                        <th>Valor</th>
+                                        <th>Forma de Pagamento</th>
+                                        <th>Aberturas</th>
                                         <th>Ações</th>
                                     </tr>
                                 </thead>
@@ -1158,6 +1191,15 @@
                                 <div class="form-group">
                                     <label class="form-label">CNPJ</label>
                                     <input type="text" id="config-empresa-cnpj" class="form-control" value="12.345.678/0001-99">
+                                </div>
+                            </div>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label class="form-label">Chave de API do Gemini (IA Comercial/Gráfica)</label>
+                                    <input type="password" id="config-gemini-key" class="form-control" placeholder="Chave de API do Gemini (Cole aqui sua chave)">
+                                </div>
+                                <div class="form-group">
+                                    <!-- Spacer/Empty form group for alignment -->
                                 </div>
                             </div>
 
@@ -1730,6 +1772,164 @@
                 <div class="flex-end gap-2 border-top pt-3">
                     <button type="button" class="btn btn-outline" data-close="modal-produto">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Salvar Produto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 8: ORÇAMENTO INTELIGENTE COM IA -->
+    <div class="modal" id="modal-orcamento">
+        <div class="modal-content modal-xl">
+            <div class="modal-header">
+                <h3 class="modal-title"><i data-lucide="sparkles" style="width:18px;height:18px;color:var(--color-primary)"></i> Novo Orçamento Inteligente</h3>
+                <button class="modal-close" data-close="modal-orcamento">&times;</button>
+            </div>
+            <div class="modal-body flex-column gap-3">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Cliente</label>
+                        <select id="orc-cliente" class="form-control"></select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Descrição do Serviço / Produto</label>
+                        <input type="text" id="orc-descricao" class="form-control" placeholder="Ex: Fachada em ACM 3mm com impressão digital" required>
+                    </div>
+                </div>
+
+                <div class="ai-budget-header">
+                    <i data-lucide="ruler" style="width:16px;height:16px"></i>
+                    <span class="font-bold">Dimensões da Placa / Peça</span>
+                </div>
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label class="form-label">Largura (metros)</label>
+                        <input type="number" step="0.01" id="orc-largura" class="form-control" value="1.00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Altura (metros)</label>
+                        <input type="number" step="0.01" id="orc-altura" class="form-control" value="1.00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Quantidade de Peças</label>
+                        <input type="number" id="orc-quantidade" class="form-control" value="1">
+                    </div>
+                </div>
+
+                <div class="ai-budget-header">
+                    <i data-lucide="package" style="width:16px;height:16px"></i>
+                    <span class="font-bold">Materiais Utilizados</span>
+                </div>
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label class="form-label">Material</label>
+                        <select id="orc-material-sel" class="form-control"></select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Quantidade (m²/un)</label>
+                        <input type="number" step="0.01" id="orc-material-qtd" class="form-control" value="0">
+                    </div>
+                    <div class="form-group flex-end">
+                        <button type="button" class="btn btn-outline btn-icon-text" id="orc-btn-add-material">
+                            <i data-lucide="plus"></i> Adicionar Material
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive select-materials-box">
+                    <table class="table table-sm" id="orc-table-materiais">
+                        <thead><tr><th>Material</th><th>Qtd</th><th>Preço/un</th><th>Total</th><th></th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Margem de Lucro Desejada (%)</label>
+                        <input type="number" id="orc-margem" class="form-control" value="50">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Validade do Orçamento</label>
+                        <input type="date" id="orc-validade" class="form-control">
+                    </div>
+                </div>
+
+                <!-- AI Calculation Section -->
+                <div class="ai-calc-section" id="ai-calc-section" style="display:none">
+                    <div class="ai-calc-header">
+                        <i data-lucide="sparkles" style="width:18px;height:18px"></i>
+                        <span>Análise da IA Gemini</span>
+                        <div class="ai-loading" id="ai-calc-loading" style="display:none"></div>
+                    </div>
+                    <div id="ai-calc-result" class="ai-calc-result"></div>
+                </div>
+
+                <div class="flex-between gap-2 border-top pt-3">
+                    <button type="button" class="btn btn-outline" data-close="modal-orcamento">Cancelar</button>
+                    <div class="flex-align gap-2">
+                        <button type="button" class="btn btn-ai btn-icon-text" id="orc-btn-calcular-ia">
+                            <i data-lucide="sparkles"></i> Calcular com IA
+                        </button>
+                        <button type="button" class="btn btn-success btn-icon-text" id="orc-btn-salvar">
+                            <i data-lucide="check"></i> Salvar Orçamento
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 9: RECIBO -->
+    <div class="modal" id="modal-recibo">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"><i data-lucide="receipt" style="width:18px;height:18px"></i> Gerar Recibo para Cliente</h3>
+                <button class="modal-close" data-close="modal-recibo">&times;</button>
+            </div>
+            <form id="form-recibo" class="modal-body flex-column gap-3">
+                <input type="hidden" id="recibo-id">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Selecione o Cliente</label>
+                        <select id="recibo-cliente" class="form-control" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Data do Recibo</label>
+                        <input type="date" id="recibo-data" class="form-control" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descrição dos Serviços / Produtos</label>
+                    <textarea id="recibo-descricao" class="form-control" rows="3" placeholder="Ex: Confecção e instalação de fachada em ACM, 3m x 1.5m..." required></textarea>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Valor Total (R$)</label>
+                        <input type="number" step="0.01" id="recibo-valor" class="form-control" placeholder="0,00" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Forma de Pagamento</label>
+                        <select id="recibo-pagamento" class="form-control" required>
+                            <option value="PIX">PIX</option>
+                            <option value="Dinheiro">Dinheiro</option>
+                            <option value="Cartão de Crédito">Cartão de Crédito</option>
+                            <option value="Cartão de Débito">Cartão de Débito</option>
+                            <option value="Boleto Bancário">Boleto Bancário</option>
+                            <option value="Transferência Bancária">Transferência Bancária</option>
+                            <option value="Cheque">Cheque</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Observações (opcional)</label>
+                    <input type="text" id="recibo-obs" class="form-control" placeholder="Ex: Pagamento conforme acordo contratual">
+                </div>
+                <div class="flex-end gap-2 border-top pt-3">
+                    <button type="button" class="btn btn-outline" data-close="modal-recibo">Cancelar</button>
+                    <button type="button" class="btn btn-outline btn-icon-text" id="btn-preview-recibo">
+                        <i data-lucide="eye"></i> Visualizar
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-icon-text">
+                        <i data-lucide="receipt"></i> Salvar e Gerar PDF
+                    </button>
                 </div>
             </form>
         </div>

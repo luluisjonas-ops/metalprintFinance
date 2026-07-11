@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orçamento Comercial | Metal Print Finance</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --color-primary: #5925e0;
+            --color-primary-hover: #481cbd;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-dark: #0f172a;
+            --color-light: #f8fafc;
+            --color-border: #e2e8f0;
+            --color-text: #334155;
+            --color-text-light: #64748b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--color-light);
+            color: var(--color-text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .budget-container {
+            background-color: #ffffff;
+            width: 100%;
+            max-width: 750px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--color-border);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Top Accent Bar */
+        .budget-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--color-primary), #06b6d4);
+        }
+
+        .budget-header {
+            padding: 30px 40px;
+            border-bottom: 1px dashed var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            background-color: var(--color-primary);
+            color: #ffffff;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--color-dark);
+        }
+
+        .logo-subtitle {
+            font-size: 11px;
+            color: var(--color-primary);
+            font-weight: 600;
+            display: block;
+            margin-top: -2px;
+        }
+
+        .budget-title {
+            text-align: right;
+        }
+
+        .budget-title h1 {
+            font-size: 22px;
+            color: var(--color-dark);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .budget-number {
+            font-size: 13px;
+            color: var(--color-text-light);
+            margin-top: 4px;
+        }
+
+        .budget-body {
+            padding: 40px;
+        }
+
+        .budget-alert {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .budget-alert-pending {
+            background-color: rgba(245, 158, 11, 0.05);
+            border: 1px solid rgba(245, 158, 11, 0.15);
+            color: var(--color-warning);
+        }
+
+        .budget-alert-approved {
+            background-color: rgba(16, 185, 129, 0.05);
+            border: 1px solid rgba(16, 185, 129, 0.15);
+            color: var(--color-success);
+        }
+
+        .budget-details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 35px;
+        }
+
+        .details-section h3 {
+            font-size: 13px;
+            text-transform: uppercase;
+            color: var(--color-text-light);
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid var(--color-border);
+            padding-bottom: 6px;
+        }
+
+        .detail-item {
+            margin-bottom: 8px;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .detail-item span:first-child {
+            color: var(--color-text-light);
+        }
+
+        .detail-item span:last-child {
+            font-weight: 600;
+            color: var(--color-dark);
+        }
+
+        /* Items Table */
+        .items-section {
+            margin-bottom: 35px;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .items-table th {
+            text-align: left;
+            padding: 12px 16px;
+            background-color: #f8fafc;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--color-text-light);
+            border-bottom: 2px solid var(--color-border);
+        }
+
+        .items-table td {
+            padding: 16px;
+            font-size: 14px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .items-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .amount-highlight {
+            background: linear-gradient(135deg, var(--color-dark), #1e293b);
+            color: #ffffff;
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 35px;
+        }
+
+        .amount-label {
+            font-size: 14px;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+        .amount-value {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .actions-bar {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 22px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--color-primary-hover);
+        }
+
+        .btn-success {
+            background-color: var(--color-success);
+            color: #ffffff;
+        }
+
+        .btn-success:hover {
+            background-color: #059669;
+        }
+
+        .btn-outline {
+            background-color: #ffffff;
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-outline:hover {
+            background-color: #f1f5f9;
+        }
+
+        .budget-footer {
+            padding: 30px 40px;
+            background-color: #f8fafc;
+            border-top: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-info {
+            font-size: 12px;
+            color: var(--color-text-light);
+            line-height: 1.5;
+        }
+
+        /* Loading / Error States */
+        .loading-screen, .error-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--color-border);
+            border-top: 4px solid var(--color-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-icon {
+            color: #ef4444;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .budget-details-grid {
+                grid-template-columns: 1fr;
+            }
+            .budget-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+            .budget-title {
+                text-align: left;
+            }
+            .actions-bar {
+                flex-direction: column;
+            }
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media print {
+            body {
+                background-color: #ffffff;
+                padding: 0;
+            }
+            .budget-container {
+                box-shadow: none;
+                border: none;
+                max-width: 100%;
+            }
+            .budget-container::before {
+                display: none;
+            }
+            .actions-bar, .budget-footer {
+                display: none !important;
+            }
+            .budget-body {
+                padding: 20px 0;
+            }
+            .budget-header {
+                padding: 20px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="budget-container" id="app">
+        <!-- Loader State -->
+        <div class="loading-screen" id="loader">
+            <div class="spinner"></div>
+            <h3>Carregando Orçamento...</h3>
+            <p style="color: var(--color-text-light); margin-top: 8px;">Conectando ao canal seguro</p>
+        </div>
+
+        <!-- Error State -->
+        <div class="error-screen" id="error-screen" style="display: none;">
+            <div class="error-icon"><i data-lucide="alert-circle" style="width: 48px; height: 48px;"></i></div>
+            <h3 id="error-title">Orçamento não encontrado</h3>
+            <p id="error-desc" style="color: var(--color-text-light); margin-top: 8px; margin-bottom: 24px;">Verifique o link ou entre em contato com a administração.</p>
+        </div>
+
+        <!-- Content Screen -->
+        <div id="budget-content" style="display: none;">
+            <div class="budget-header">
+                <div class="logo-section">
+                    <div class="logo-icon">
+                        <i data-lucide="layers"></i>
+                    </div>
+                    <div>
+                        <span class="logo-title" id="company-name">Metal Print</span>
+                        <span class="logo-subtitle">Visual Communication</span>
+                    </div>
+                </div>
+                <div class="budget-title">
+                    <h1>Orçamento</h1>
+                    <div class="budget-number" id="budget-num">Nº ORC-0000</div>
+                </div>
+            </div>
+
+            <div class="budget-body">
+                <div class="budget-alert budget-alert-pending" id="status-alert">
+                    <i data-lucide="clock" id="status-icon"></i>
+                    <span id="status-text">ESTE ORÇAMENTO ESTÁ PENDENTE DE APROVAÇÃO</span>
+                </div>
+
+                <div class="budget-details-grid">
+                    <div class="details-section">
+                        <h3>DADOS DO CLIENTE</h3>
+                        <div class="detail-item">
+                            <span>Nome / Razão:</span>
+                            <span id="client-name">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <span>CNPJ / CPF:</span>
+                            <span id="client-doc">-</span>
+                        </div>
+                    </div>
+                    <div class="details-section">
+                        <h3>DADOS DA PROPOSTA</h3>
+                        <div class="detail-item">
+                            <span>Data Emissão:</span>
+                            <span id="issue-date">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <span>Validade:</span>
+                            <span id="expiry-date">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="items-section">
+                    <div class="details-section">
+                        <h3>DETALHAMENTO DO SERVIÇO / PROJETO</h3>
+                    </div>
+                    <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th>Serviço / Produto</th>
+                                <th>Dimensões (m)</th>
+                                <th>Quantidade</th>
+                                <th>Acabamento</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td id="item-desc" style="font-weight: 600; color: var(--color-dark);">-</td>
+                                <td id="item-dim">-</td>
+                                <td id="item-qty">-</td>
+                                <td id="item-finish">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="amount-highlight">
+                    <span class="amount-label">Valor Total Proposto</span>
+                    <span class="amount-value" id="total-val">R$ 0,00</span>
+                </div>
+
+                <div class="actions-bar" id="actions-panel">
+                    <button class="btn btn-success" id="btn-approve">
+                        <i data-lucide="check" style="width: 16px; height: 16px;"></i> Aprovar Proposta
+                    </button>
+                    <button class="btn btn-outline" onclick="window.print()">
+                        <i data-lucide="printer" style="width: 16px; height: 16px;"></i> Imprimir Proposta
+                    </button>
+                    <button class="btn btn-outline" id="btn-whatsapp">
+                        <i data-lucide="message-square" style="width: 16px; height: 16px;"></i> Falar com Gráfica
+                    </button>
+                </div>
+            </div>
+
+            <div class="budget-footer">
+                <div class="footer-info">
+                    <p>Orçamento sujeito a alterações caso as especificações do projeto sejam modificadas.</p>
+                    <p style="margin-top: 4px;">Metal Print Comunicação Visual &copy; Todos os direitos reservados.</p>
+                </div>
+                <div style="font-size: 11px; color: var(--color-text-light); text-align: right;">
+                    Proposta eletrônica certificada
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyA_IIOZ9J3YvrWr__ipeoolT6m1bGQ82kk",
+            authDomain: "metal-print-a099b.firebaseapp.com",
+            databaseURL: "https://metal-print-a099b-default-rtdb.firebaseio.com",
+            projectId: "metal-print-a099b",
+            storageBucket: "metal-print-a099b.firebasestorage.app",
+            messagingSenderId: "521510301351",
+            appId: "1:521510301351:web:49016ec1da1058e35db582",
+            measurementId: "G-6P0TDTDXML"
+        };
+
+        function formatCurrency(val) {
+            return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val || 0);
+        }
+        function formatDateBR(dateStr) {
+            if (!dateStr) return "-";
+            const parts = dateStr.split("-");
+            if (parts.length !== 3) return dateStr;
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            lucide.createIcons();
+
+            let db = null;
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+            } catch (e) {
+                console.error("Falha ao inicializar o Firebase:", e);
+                showError("Erro de Conexão", "Não foi possível conectar ao banco de dados em nuvem.");
+                return;
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const orcamentoId = urlParams.get('id');
+
+            if (!orcamentoId) {
+                showError("Link Inválido", "O código identificador do orçamento não foi informado na URL.");
+                return;
+            }
+
+            try {
+                const docRef = db.collection("orcamentos").doc(orcamentoId);
+                const docSnap = await docRef.get();
+
+                if (!docSnap.exists) {
+                    showError("Orçamento não encontrado", "O orçamento solicitado expirou ou não está mais ativo.");
+                    return;
+                }
+
+                const orc = docSnap.data();
+
+                // Renderizar
+                document.getElementById("company-name").textContent = orc.companyName || "Metal Print";
+                document.getElementById("budget-num").textContent = `Nº ORC-${orcamentoId.substring(orcamentoId.length - 6).toUpperCase()}`;
+                document.getElementById("client-name").textContent = orc.cliente || "-";
+                document.getElementById("client-doc").textContent = orc.clienteDocumento || "Não informado";
+                document.getElementById("issue-date").textContent = formatDateBR(orc.data) || "-";
+                document.getElementById("expiry-date").textContent = formatDateBR(orc.validade) || "30 dias úteis";
+                
+                document.getElementById("item-desc").textContent = orc.produto || orc.descricao || "Comunicação Visual Personalizada";
+                document.getElementById("item-dim").textContent = `${orc.largura || 1.0}m x ${orc.altura || 1.0}m`;
+                document.getElementById("item-qty").textContent = `${orc.quantidade || 1} un`;
+                document.getElementById("item-finish").textContent = orc.acabamento || "Refile simples";
+
+                const precoVenda = orc.valorFinal || orc.valorSugerido || 0;
+                document.getElementById("total-val").textContent = formatCurrency(precoVenda);
+
+                // Configurar Status Alert
+                const alertDiv = document.getElementById("status-alert");
+                const alertText = document.getElementById("status-text");
+                const alertIcon = document.getElementById("status-icon");
+
+                if (orc.status === "Aprovado") {
+                    alertDiv.className = "budget-alert budget-alert-approved";
+                    alertText.textContent = "ESTE ORÇAMENTO JÁ FOI APROVADO PELO CLIENTE";
+                    alertIcon.setAttribute("data-lucide", "check-circle-2");
+                    document.getElementById("btn-approve").style.display = "none";
+                } else {
+                    alertDiv.className = "budget-alert budget-alert-pending";
+                    alertText.textContent = "ESTE ORÇAMENTO ESTÁ PENDENTE DE SUA APROVAÇÃO";
+                    alertIcon.setAttribute("data-lucide", "clock");
+                }
+
+                // Ação Aprovar
+                document.getElementById("btn-approve").addEventListener("click", async () => {
+                    if (confirm("Você confirma a aprovação deste orçamento comercial?")) {
+                        try {
+                            await docRef.update({ status: "Aprovado" });
+                            
+                            // Adicionar aviso para a gráfica gerando uma OS na fila automaticamente
+                            const osNum = `OS-${new Date().getFullYear()}-${String(Date.now()).substring(String(Date.now()).length - 4)}`;
+                            await db.collection("ordens_servico").add({
+                                companyId: orc.companyId || "metal_print_cv_demo",
+                                numero: osNum,
+                                cliente: orc.cliente,
+                                descricao: `[APROVADO VIA LINK] ${orc.produto || orc.descricao || 'Serviço Sob Medida'} (${orc.largura}x${orc.altura}m - ${orc.quantidade}un)`,
+                                prazo: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+                                responsavel: "Aguardando Atribuição",
+                                materiaisUtilizados: [],
+                                custoExtra: (orc.instalacao || 0) + (orc.frete || 0),
+                                valorTotal: orc.valorFinal || orc.valorSugerido,
+                                status: "Aprovado / Fila",
+                                financeiroStatus: "Pendente",
+                                metodoRecebimento: "PIX",
+                                dataFinalizado: null,
+                                dataCriacao: new Date().toISOString()
+                            });
+
+                            alert("Orçamento aprovado com sucesso! Entraremos em contato para os próximos passos.");
+                            window.location.reload();
+                        } catch (err) {
+                            alert("Falha ao salvar aprovação. Tente novamente.");
+                            console.error(err);
+                        }
+                    }
+                });
+
+                // Compartilhar WhatsApp
+                document.getElementById("btn-whatsapp").addEventListener("click", () => {
+                    const whatsText = encodeURIComponent(`Olá! Estou visualizando o Orçamento da Metal Print no valor de ${formatCurrency(precoVenda)}. Quero tirar algumas dúvidas.`);
+                    window.open(`https://api.whatsapp.com/send?text=${whatsText}`, '_blank');
+                });
+
+                document.getElementById("loader").style.display = "none";
+                document.getElementById("budget-content").style.display = "block";
+                lucide.createIcons();
+
+                // 5. Incrementar Visualizações e Atualizar Status (Quente/Frio/Morno) no Firebase
+                const viewsCount = (orc.visualizacoes || 0) + 1;
+                
+                await docRef.update({
+                    visualizacoes: viewsCount,
+                    ultimaVisualizacao: new Date().toISOString()
+                });
+
+                // Registrar o histórico detalhado
+                await db.collection("visualizacoes_orcamentos").add({
+                    orcamentoId: orcamentoId,
+                    timestamp: new Date().toISOString(),
+                    device: navigator.userAgent
+                });
+
+                console.log(`Visualização orçamento registrada. Total: ${viewsCount}`);
+
+            } catch (err) {
+                console.error("Erro ao buscar o orçamento:", err);
+                showError("Erro de Servidor", "Ocorreu uma falha ao obter as informações comerciais.");
+            }
+        });
+
+        function showError(title, desc) {
+            document.getElementById("loader").style.display = "none";
+            document.getElementById("budget-content").style.display = "none";
+            
+            const errScreen = document.getElementById("error-screen");
+            errScreen.style.display = "flex";
+            document.getElementById("error-title").textContent = title;
+            document.getElementById("error-desc").textContent = desc;
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>
