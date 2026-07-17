@@ -1083,11 +1083,10 @@ function renderOrcamentos() {
 
         rowsCount++;
         
-        // Listar materiais cadastrados no orçamento
-        let materiaisTexto = "Nenhum";
-        if (o.materiaisUtilizados && o.materiaisUtilizados.length > 0) {
-            materiaisTexto = o.materiaisUtilizados.map(m => `${m.nome} (${m.quantidade})`).join(", ");
-        }
+        const views = o.visualizacoes || 0;
+        let viewsIcon = '🧊';
+        if (views >= 5) viewsIcon = '🔥';
+        else if (views >= 2) viewsIcon = '🌡️';
 
         const row = document.createElement("tr");
         row.innerHTML = `
@@ -1095,15 +1094,15 @@ function renderOrcamentos() {
             <td><strong>${o.cliente}</strong></td>
             <td>${o.produto}</td>
             <td>${o.largura}x${o.altura} m (${o.quantidade} un)</td>
-            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="${materiaisTexto}">${materiaisTexto}</td>
-            <td class="text-secondary">${formatCurrency(o.valorSugerido)}</td>
             <td class="font-bold text-success">${formatCurrency(o.valorFinal)}</td>
             <td>
                 <span class="table-badge ${o.status === 'Aprovado' ? 'table-badge-success' : 'table-badge-warning'}">
                     ${o.status}
                 </span>
             </td>
+            <td><span title="${views} aberturas">${viewsIcon} ${views}</span></td>
             <td class="actions-cell">
+                <button class="btn btn-outline btn-icon btn-sm" onclick="window.app.shareOrcamentoLink('${o.id}')" title="Copiar link rastreável"><i data-lucide="link"></i></button>
                 ${o.status === 'Pendente' ? `
                     <button class="btn btn-success btn-sm btn-icon-text" onclick="window.app.approveBudget('${o.id}')"><i data-lucide="check"></i> Aprovar / Gerar OS</button>
                 ` : `<span class="text-xs text-success font-bold"><i data-lucide="check-circle-2"></i> OS Emitida</span>`}
@@ -1133,16 +1132,27 @@ function renderRecibos() {
         if (search && !r.cliente.toLowerCase().includes(search) && !r.descricao.toLowerCase().includes(search)) return;
 
         rowsCount++;
+        const views = r.visualizacoes || 0;
+        let viewsIcon = '🧊 Frio';
+        let viewsClass = 'text-secondary';
+        if (views >= 5) { viewsIcon = '🔥 Quente'; viewsClass = 'text-danger'; }
+        else if (views >= 2) { viewsIcon = '🌡️ Morno'; viewsClass = 'text-warning'; }
+        
+        const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
+        const publicUrl = `${baseUrl}recibo.html?id=${r.id}`;
+        
         const row = document.createElement("tr");
         row.innerHTML = `
-            <td><code>REC-${String(idx + 1001).substring(1)}</code></td>
+            <td><code>${r.numero || ('REC-' + String(idx + 1001).substring(1))}</code></td>
             <td>${formatDateBR(r.data)}</td>
             <td><strong>${r.cliente}</strong></td>
             <td>${r.descricao.substring(0, 50)}${r.descricao.length > 50 ? '...' : ''}</td>
             <td class="font-bold text-success">${formatCurrency(r.valor)}</td>
             <td>${r.pagamento}</td>
+            <td><span class="${viewsClass} font-bold" title="${views} visualizações">${viewsIcon} (${views})</span></td>
             <td class="actions-cell">
-                <button class="btn btn-outline btn-icon btn-sm" onclick="window.app.printReceipt('${r.id}')" title="Imprimir Recibo"><i data-lucide="printer"></i></button>
+                <button class="btn btn-outline btn-icon btn-sm" onclick="window.app.shareReceiptLink('${r.id}')" title="Copiar link rastreável"><i data-lucide="link"></i></button>
+                <button class="btn btn-outline btn-icon btn-sm" onclick="window.app.printReceipt('${r.id}')" title="Imprimir / Ver Recibo"><i data-lucide="printer"></i></button>
                 <button class="btn btn-danger btn-icon btn-sm" onclick="window.app.deleteReceipt('${r.id}')" title="Excluir Recibo"><i data-lucide="trash-2"></i></button>
             </td>
         `;
@@ -1150,7 +1160,7 @@ function renderRecibos() {
     });
 
     if (rowsCount === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="empty-state">Nenhum recibo gerado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="empty-state">Nenhum recibo gerado.</td></tr>`;
     }
     triggerLucide();
 }
@@ -2182,7 +2192,7 @@ Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos d
         }
     });
 
-    document.getElementById("orc-btn-salvar").addEventListener("click", () => {
+    document.getElementById("orc-btn-salvar").addEventListener("click", async () => {
         const cliente = document.getElementById("orc-cliente").value;
         const descricao = document.getElementById("orc-descricao").value;
         const largura = parseFloat(document.getElementById("orc-largura").value) || 1;
@@ -2206,7 +2216,7 @@ Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos d
 
         valores.custoTotal = valores.custoMaterial + valores.custoProducao;
         const margem = parseFloat(document.getElementById("orc-margem").value) || 50;
-        valores.precoSugerido = valores.custoTotal / (1 - (margem / 100));
+        valores.precoSugerido = margem < 100 ? (valores.custoTotal / (1 - (margem / 100))) : valores.custoTotal * 3;
         valores.lucroEstimado = valores.precoSugerido - valores.custoTotal;
 
         const dataCalculada = document.getElementById("orc-btn-salvar").dataset.valCalculado;
@@ -2216,7 +2226,9 @@ Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos d
             valores.custoTotal = parsed.custoTotal;
         }
 
+        const orcId = "orc_" + Date.now();
         const orc = {
+            id: orcId,
             data: new Date().toISOString().split("T")[0],
             cliente: cliente,
             produto: descricao,
@@ -2227,18 +2239,33 @@ Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos d
             valorSugerido: valores.precoSugerido,
             valorFinal: valores.precoSugerido,
             validade: validade,
-            status: "Pendente"
+            status: "Pendente",
+            // Dados empresa para página pública
+            companyName: state.companyName,
+            companyCnpj: state.companyCnpj,
+            visualizacoes: 0,
+            ultimaVisualizacao: null
         };
 
-        dbSave("orcamentos", orc);
+        await dbSave("orcamentos", orc);
         document.getElementById("modal-orcamento").classList.remove("show");
-        alert("Orçamento inteligente criado com sucesso!");
+        document.getElementById("orc-btn-salvar").dataset.valCalculado = "";
+        
+        // Mostrar link público rastreável
+        const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
+        const publicUrl = `${baseUrl}orcamento-publico.html?id=${orc.id}`;
+        
+        const confirmed = confirm(`✅ Orçamento criado com sucesso!\n\nLink público rastreável (para enviar ao cliente):\n${publicUrl}\n\nDeseja abrir o orçamento agora?`);
+        if (confirmed) {
+            window.open(publicUrl, '_blank');
+        }
+        
         state.activeTab = "orçamentos";
         renderActiveTab();
     });
 
     // Lógica do Modal de Recibo
-    document.getElementById("form-recibo").addEventListener("submit", (e) => {
+    document.getElementById("form-recibo").addEventListener("submit", async (e) => {
         e.preventDefault();
         
         let rId = document.getElementById("recibo-id").value;
@@ -2246,22 +2273,37 @@ Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos d
             rId = "receipt_" + Date.now();
         }
 
+        // Gerar número do recibo
+        const reciboNum = `REC-${new Date().getFullYear()}-${String(state.recibos.length + 1001).padStart(4, '0')}`;
+        
         const recibo = {
             id: rId,
+            numero: reciboNum,
             cliente: document.getElementById("recibo-cliente").value,
             data: document.getElementById("recibo-data").value,
             descricao: document.getElementById("recibo-descricao").value,
             valor: parseFloat(document.getElementById("recibo-valor").value) || 0,
             pagamento: document.getElementById("recibo-pagamento").value,
-            obs: document.getElementById("recibo-obs").value
+            metodoPagamento: document.getElementById("recibo-pagamento").value,
+            obs: document.getElementById("recibo-obs").value,
+            // Dados da empresa para a página pública
+            companyName: state.companyName,
+            companyCnpj: state.companyCnpj,
+            visualizacoes: 0,
+            ultimaVisualizacao: null
         };
 
-        dbSave("recibos", recibo);
+        await dbSave("recibos", recibo);
         document.getElementById("modal-recibo").classList.remove("show");
-        alert("Recibo salvo com sucesso!");
         
-        // Abrir PDF do recibo logo após salvar
-        generateReceiptPDF(recibo.id);
+        // Mostrar link público
+        const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
+        const publicUrl = `${baseUrl}recibo.html?id=${recibo.id}`;
+        
+        const confirmed = confirm(`✅ Recibo salvo com sucesso!\n\nLink público rastreável gerado:\n${publicUrl}\n\nDeseja abrir o recibo agora para impressão?`);
+        if (confirmed) {
+            window.open(publicUrl, '_blank');
+        }
         
         state.activeTab = "recibos";
         renderActiveTab();
@@ -2704,6 +2746,44 @@ function renderOSMaterialsTable() {
 
 // 9. EVENTOS COM GATILHOS INLINE (WINDOW.APP)
 window.app = {
+    printOS: (id) => {
+        generateOSPDF(id);
+    },
+    printReceipt: (id) => {
+        const r = state.recibos.find(rec => rec.id === id);
+        if (!r) { alert('Recibo não encontrado.'); return; }
+        // Abrir a página pública de recibo
+        const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
+        const publicUrl = `${baseUrl}recibo.html?id=${id}`;
+        window.open(publicUrl, '_blank');
+    },
+    deleteReceipt: (id) => {
+        if (confirm('Deseja excluir este recibo permanentemente?')) {
+            dbDelete('recibos', id);
+        }
+    },
+    shareReceiptLink: (id) => {
+        const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
+        const publicUrl = `${baseUrl}recibo.html?id=${id}`;
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(publicUrl).then(() => {
+                alert('✅ Link copiado!\n\n' + publicUrl + '\n\nEnvie este link ao cliente para que ele possa visualizar o recibo. Cada abertura é registrada.');
+            });
+        } else {
+            prompt('Copie o link rastreável:', publicUrl);
+        }
+    },
+    shareOrcamentoLink: (id) => {
+        const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
+        const publicUrl = `${baseUrl}orcamento-publico.html?id=${id}`;
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(publicUrl).then(() => {
+                alert('✅ Link copiado!\n\n' + publicUrl + '\n\nEnvie ao cliente. Cada abertura é registrada como interesse.');
+            });
+        } else {
+            prompt('Copie o link do orçamento:', publicUrl);
+        }
+    },
     editTransaction: (id) => {
         const f = state.financeiro.find(item => item.id === id);
         if (!f) return;
