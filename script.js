@@ -88,15 +88,43 @@ let chartFluxoCaixa = null;
 let chartFluxoCaixaDetalhado = null;
 let chartIndicadoresCategorias = null;
 
+// Sincroniza dados locais para Firestore quando online
+async function syncLocalDataToFirestore() {
+    if (!firebaseActive || !db) return;
+    const collectionsToListen = ["clientes", "fornecedores", "funcionarios", "materiais", "produtos", "financeiro", "orcamentos", "ordens_servico", "recibos"];
+    for (const colName of collectionsToListen) {
+        const localData = localStorage.getItem(`mp_finance_${colName}`);
+        if (localData) {
+            try {
+                const list = JSON.parse(localData);
+                if (Array.isArray(list) && list.length > 0) {
+                    console.log(`Sincronizando ${list.length} itens locais de ${colName} para o Firestore...`);
+                    for (const item of list) {
+                        item.companyId = state.companyId;
+                        if (!item.id) {
+                            item.id = colName + "_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+                        }
+                        await db.collection(colName).doc(item.id).set(item);
+                    }
+                    localStorage.removeItem(`mp_finance_${colName}`);
+                }
+            } catch (err) {
+                console.error(`Erro ao sincronizar coleção local ${colName}:`, err);
+            }
+        }
+    }
+}
+
 // 1. INICIALIZAÇÃO DE BANCO DE DADOS E EVENTOS
 function initDb() {
     const statusBadge = document.getElementById("firebase-status");
     if (typeof firebase !== 'undefined') {
         try {
-            firebase.initializeApp(firebaseConfig);
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
             db = firebase.firestore();
             
-            // Habilita persistência offline do Firestore
             db.enablePersistence().catch(err => {
                 console.warn("Persistência offline do Firestore falhou:", err.code);
             });
@@ -105,6 +133,8 @@ function initDb() {
             statusBadge.classList.add("online");
             statusBadge.querySelector(".status-text").textContent = "Nuvem (Firestore)";
             console.log("Firebase Firestore inicializado com sucesso.");
+            
+            syncLocalDataToFirestore();
         } catch (e) {
             console.error("Falha ao inicializar o Firebase. Usando fallback LocalStorage:", e);
             firebaseActive = false;
@@ -178,11 +208,21 @@ async function dbSave(collectionName, data) {
     }
     
     if (firebaseActive && db) {
-        try {
-            await db.collection(collectionName).doc(data.id).set(data);
-        } catch (e) {
-            console.error("Erro ao salvar no Firestore. Salvando localmente...", e);
-            dbSaveLocal(collectionName, data);
+        let retries = 3;
+        while (retries > 0) {
+            try {
+                await db.collection(collectionName).doc(data.id).set(data);
+                break; // Sucesso, sai do loop
+            } catch (e) {
+                retries--;
+                console.warn(`Erro ao salvar no Firestore. Tentativas restantes: ${retries}`, e);
+                if (retries === 0) {
+                    console.error("Falha persistente ao salvar no Firestore. Salvando localmente...", e);
+                    dbSaveLocal(collectionName, data);
+                } else {
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Aguarda 1 segundo antes do retry
+                }
+            }
         }
     } else {
         dbSaveLocal(collectionName, data);
@@ -207,11 +247,21 @@ function dbSaveLocal(collectionName, data) {
 // Remove dados de forma automática
 async function dbDelete(collectionName, id) {
     if (firebaseActive && db) {
-        try {
-            await db.collection(collectionName).doc(id).delete();
-        } catch (e) {
-            console.error("Erro ao deletar no Firestore. Deletando localmente...", e);
-            dbDeleteLocal(collectionName, id);
+        let retries = 3;
+        while (retries > 0) {
+            try {
+                await db.collection(collectionName).doc(id).delete();
+                break; // Sucesso
+            } catch (e) {
+                retries--;
+                console.warn(`Erro ao deletar no Firestore. Tentativas restantes: ${retries}`, e);
+                if (retries === 0) {
+                    console.error("Falha persistente ao deletar no Firestore. Deletando localmente...", e);
+                    dbDeleteLocal(collectionName, id);
+                } else {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
         }
     } else {
         dbDeleteLocal(collectionName, id);
@@ -1092,7 +1142,7 @@ function renderOrcamentos() {
         row.innerHTML = `
             <td>${formatDateBR(o.data)}</td>
             <td><strong>${o.cliente}</strong></td>
-            <td>${o.produto}</td>
+            <td>${o.produto}<br><span class="text-xs text-secondary">${getBudgetServiceLabel(o.tipoServico || 'personalizado')}</span></td>
             <td>${o.largura}x${o.altura} m (${o.quantidade} un)</td>
             <td class="font-bold text-success">${formatCurrency(o.valorFinal)}</td>
             <td>
@@ -1149,7 +1199,10 @@ function renderRecibos() {
             <td>${r.descricao.substring(0, 50)}${r.descricao.length > 50 ? '...' : ''}</td>
             <td class="font-bold text-success">${formatCurrency(r.valor)}</td>
             <td>${r.pagamento}</td>
-            <td><span class="${viewsClass} font-bold" title="${views} visualizações">${viewsIcon} (${views})</span></td>
+            <td>
+                <span class="${viewsClass} font-bold" title="${views} visualizações">${viewsIcon} (${views})</span><br>
+                <span class="text-xs ${r.statusPagamento === 'Pago' ? 'text-success' : 'text-warning'}">${r.statusPagamento || 'Aguardando pagamento'}</span>
+            </td>
             <td class="actions-cell">
                 <button class="btn btn-outline btn-icon btn-sm" onclick="window.app.shareReceiptLink('${r.id}')" title="Copiar link rastreável"><i data-lucide="link"></i></button>
                 <button class="btn btn-outline btn-icon btn-sm" onclick="window.app.printReceipt('${r.id}')" title="Imprimir / Ver Recibo"><i data-lucide="printer"></i></button>
@@ -1174,10 +1227,16 @@ function openBudgetModal() {
     document.getElementById("orc-quantidade").value = "1";
     document.getElementById("orc-margem").value = "50";
     document.getElementById("orc-validade").value = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    document.getElementById("orc-tipo-servico").value = "personalizado";
+    document.getElementById("orc-objetivo").value = "";
+    document.getElementById("orc-instalação").value = "metalprint";
+    document.getElementById("orc-deslocamento").value = "0";
+    document.getElementById("orc-material-qtd").value = "0";
     
     // Esconder seção da IA
     document.getElementById("ai-calc-section").style.display = "none";
     document.getElementById("ai-calc-result").innerHTML = "";
+    renderBudgetRecommendations();
 
     // Popular clientes
     const cliSel = document.getElementById("orc-cliente");
@@ -1251,6 +1310,7 @@ function generateOSPDF(osId) {
     if (!os) return alert("OS não encontrada.");
 
     const cli = state.clientes.find(c => c.nome === os.cliente) || {};
+    const valorExibido = os.valorTotal && os.valorTotal > 0 ? 'Valor reservado ao gestor' : 'Não informado';
     
     // Montar materiais
     let materiaisHTML = "";
@@ -1271,7 +1331,7 @@ function generateOSPDF(osId) {
     }
 
     const printWindow = window.open("", "_blank");
-    printWindow.document.write(\`
+    printWindow.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
@@ -1367,7 +1427,7 @@ function generateOSPDF(osId) {
 
                 <div class="print-total-box">
                     <div class="label">VALOR TOTAL DO SERVIÇO</div>
-                    <div class="value">\${formatCurrency(os.valorTotal)}</div>
+                    <div class="value">\${os.valorTotal && os.valorTotal > 0 ? 'Valor reservado ao gestor' : 'Não informado'}</div>
                 </div>
 
                 <div class="print-signatures">
@@ -1393,7 +1453,7 @@ function generateOSPDF(osId) {
             </div>
         </body>
         </html>
-    \`);
+    `);
     printWindow.document.close();
 }
 
@@ -1401,8 +1461,10 @@ function generateReceiptPDF(receiptId) {
     const r = state.recibos.find(rec => rec.id === receiptId);
     if (!r) return alert("Recibo não encontrado.");
 
+    const paymentStatus = r.statusPagamento || "Aguardando pagamento";
+    const paymentText = paymentStatus === "Pago" ? "COMPROVANTE DE PAGAMENTO CONFIRMADO" : "PAGAMENTO AINDA PENDENTE";
     const printWindow = window.open("", "_blank");
-    printWindow.document.write(\`
+    printWindow.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
@@ -1448,13 +1510,16 @@ function generateReceiptPDF(receiptId) {
                     VALOR: \${formatCurrency(r.valor)}
                 </div>
 
+                <div style="margin: 12px 0 20px; text-align: center; font-size: 14px; font-weight: 700; color: \${paymentStatus === 'Pago' ? '#065f46' : '#b45309'};">\${paymentText}</div>
+
                 <div class="receipt-body">
                     Recebemos de <strong>\${r.cliente}</strong>, a importância de <strong>\${formatCurrency(r.valor)}</strong>, referente a:<br>
                     <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 14px; border-radius: 6px; margin: 15px 0; font-style: italic;">
                         \${r.descricao}
                     </div>
                     Para maior clareza, firmamos o presente recibo com quitação total do valor descrito acima, recebido via <strong>\${r.pagamento}</strong>.
-                    \${r.obs ? \`<br><br><strong>Observação:</strong> \${r.obs}\` : ''}
+                    \${paymentStatus ? '<br><br><strong>Status:</strong> ' + paymentStatus : ''}
+                    \${r.obs ? '<br><br><strong>Observação:</strong> ' + r.obs : ''}
                 </div>
 
                 <div class="print-signatures">
@@ -1471,7 +1536,7 @@ function generateReceiptPDF(receiptId) {
             </div>
         </body>
         </html>
-    \`);
+    `);
     printWindow.document.close();
 }
 
@@ -1702,6 +1767,7 @@ function renderCalculadora() {
 function renderConfiguracoes() {
     document.getElementById("config-empresa-nome").value = state.companyName;
     document.getElementById("config-empresa-cnpj").value = state.companyCnpj;
+    document.getElementById("config-gemini-key").value = localStorage.getItem("mp_gemini_api_key") || "";
 }
 
 // 4. LÓGICA DA CALCULADORA INTELIGENTE
@@ -1938,6 +2004,88 @@ function triggerLucide() {
     }
 }
 
+function getBudgetServiceLabel(serviceType) {
+    switch (serviceType) {
+        case "lona": return "Lona / Banner";
+        case "adesivo": return "Adesivo / Vinil";
+        case "faixada": return "Faixada / Fachada";
+        case "impressao": return "Impressão / Aplicação";
+        case "acrilico": return "Acrílico / ACM";
+        default: return "Personalizado / Outro";
+    }
+}
+
+function getBudgetMaterialSuggestions(serviceType, objective, materials) {
+    const normalized = (serviceType || "personalizado").toLowerCase();
+    const matches = [];
+
+    materials.forEach(material => {
+        const name = (material.nome || "").toLowerCase();
+        const category = (material.categoria || "").toLowerCase();
+        let relevance = 0;
+
+        if (normalized === "lona" && (name.includes("lona") || category.includes("lona"))) relevance = 3;
+        if (normalized === "adesivo" && (name.includes("adesivo") || category.includes("adesivo") || name.includes("vinil"))) relevance = 3;
+        if (normalized === "faixada" && (name.includes("acm") || name.includes("fachada") || category.includes("acm") || category.includes("metal"))) relevance = 3;
+        if (normalized === "impressao" && (name.includes("impress") || name.includes("adesivo") || name.includes("vinil"))) relevance = 2;
+        if (normalized === "acrilico" && (name.includes("acrílico") || name.includes("acrylico") || name.includes("acm") || category.includes("acm"))) relevance = 3;
+        if (normalized === "personalizado") {
+            if (name.includes("lona") || name.includes("adesivo") || name.includes("acm") || name.includes("vinil")) relevance = 1;
+        }
+
+        if (relevance > 0) {
+            matches.push({
+                id: material.id,
+                name: material.nome,
+                stock: parseFloat(material.quantidade) || 0,
+                unidade: material.unidade || "un",
+                stockText: (parseFloat(material.quantidade) || 0) > 0 ? `Disponível (${material.quantidade} ${material.unidade})` : "Sem estoque"
+            });
+        }
+    });
+
+    if (matches.length === 0) {
+        const fallback = materials.slice(0, 3).map(material => ({
+            id: material.id,
+            name: material.nome,
+            stock: parseFloat(material.quantidade) || 0,
+            unidade: material.unidade || "un",
+            stockText: (parseFloat(material.quantidade) || 0) > 0 ? `Disponível (${material.quantidade} ${material.unidade})` : "Sem estoque"
+        }));
+        return fallback;
+    }
+
+    return matches.slice(0, 4);
+}
+
+function renderBudgetRecommendations() {
+    const serviceType = document.getElementById("orc-tipo-servico")?.value || "personalizado";
+    const objective = document.getElementById("orc-objetivo")?.value || "";
+    const container = document.getElementById("orc-material-recommendations");
+    if (!container) return;
+
+    const suggestions = getBudgetMaterialSuggestions(serviceType, objective, state.materiais || []);
+    if (suggestions.length === 0) {
+        container.innerHTML = '<div class="text-sm text-secondary">Cadastre materiais no estoque para que a IA sugira opções automaticamente.</div>';
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="text-sm font-bold mb-2">Sugestões da IA para ${getBudgetServiceLabel(serviceType)}:</div>
+        <div class="flex-column gap-2">
+            ${suggestions.map(suggestion => `
+                <div class="flex-between align-items-center gap-2" style="border:1px solid var(--color-border); border-radius: 8px; padding: 8px 10px; background: #f8fafc;">
+                    <div>
+                        <div class="font-bold">${suggestion.name}</div>
+                        <div class="text-xs text-secondary">${suggestion.stockText}</div>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="window.app.addSuggestedBudgetMaterial('${suggestion.id}')">Adicionar</button>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
 // Exportações CSV
 function exportReportToCSV(reportType) {
     let headers = [];
@@ -1986,6 +2134,32 @@ function exportReportToCSV(reportType) {
 document.addEventListener("DOMContentLoaded", () => {
     initDb();
     setupRealtimeListeners();
+
+    // Filtros e Buscas em Tempo Real
+    const bindFilter = (id, event, callback) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener(event, callback);
+    };
+    
+    bindFilter("os-search", "input", renderOrdensServico);
+    bindFilter("os-filter-status", "change", renderOrdensServico);
+    bindFilter("orc-search", "input", renderOrcamentos);
+    bindFilter("rec-recibo-search", "input", renderRecibos);
+    
+    bindFilter("fin-filter-inicio", "change", renderFinanceiro);
+    bindFilter("fin-filter-fim", "change", renderFinanceiro);
+    bindFilter("fin-filter-tipo", "change", renderFinanceiro);
+    bindFilter("fin-filter-categoria", "change", renderFinanceiro);
+    
+    bindFilter("rec-search", "input", renderReceitas);
+    bindFilter("rec-filter-metodo", "change", renderReceitas);
+    
+    bindFilter("des-search", "input", renderDespesas);
+    bindFilter("des-filter-natureza", "change", renderDespesas);
+    
+    bindFilter("cli-search", "input", renderClientes);
+    bindFilter("for-search", "input", renderFornecedores);
+    bindFilter("est-search", "input", renderEstoque);
 
     // Cliques na Barra Lateral
     document.querySelectorAll(".nav-item").forEach(item => {
@@ -2073,6 +2247,17 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.addEventListener("click", () => {
             const mId = btn.getAttribute("data-close");
             document.getElementById(mId).classList.remove("show");
+        });
+    });
+
+    document.getElementById("orc-tipo-servico").addEventListener("change", renderBudgetRecommendations);
+    document.getElementById("orc-objetivo").addEventListener("input", renderBudgetRecommendations);
+    document.querySelectorAll("#orc-service-chips .ai-suggest-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const service = btn.getAttribute("data-service") || "personalizado";
+            document.getElementById("orc-tipo-servico").value = service;
+            document.getElementById("orc-service-selected-label").textContent = `Tipo selecionado: ${getBudgetServiceLabel(service)}`;
+            renderBudgetRecommendations();
         });
     });
 
@@ -2216,7 +2401,15 @@ Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos d
 
         valores.custoTotal = valores.custoMaterial + valores.custoProducao;
         const margem = parseFloat(document.getElementById("orc-margem").value) || 50;
+        const instalacao = document.getElementById("orc-instalação").value;
+        const deslocamento = parseFloat(document.getElementById("orc-deslocamento").value) || 0;
         valores.precoSugerido = margem < 100 ? (valores.custoTotal / (1 - (margem / 100))) : valores.custoTotal * 3;
+        valores.precoSugerido += deslocamento;
+        if (instalacao === "metalprint") {
+            valores.precoSugerido += 150;
+        } else if (instalacao === "cliente") {
+            valores.precoSugerido += 0;
+        }
         valores.lucroEstimado = valores.precoSugerido - valores.custoTotal;
 
         const dataCalculada = document.getElementById("orc-btn-salvar").dataset.valCalculado;
@@ -2239,6 +2432,10 @@ Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos d
             valorSugerido: valores.precoSugerido,
             valorFinal: valores.precoSugerido,
             validade: validade,
+            tipoServico: document.getElementById("orc-tipo-servico").value,
+            objetivo: document.getElementById("orc-objetivo").value,
+            instalacao: document.getElementById("orc-instalação").value,
+            deslocamento: parseFloat(document.getElementById("orc-deslocamento").value) || 0,
             status: "Pendente",
             // Dados empresa para página pública
             companyName: state.companyName,
@@ -2285,6 +2482,7 @@ Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos d
             valor: parseFloat(document.getElementById("recibo-valor").value) || 0,
             pagamento: document.getElementById("recibo-pagamento").value,
             metodoPagamento: document.getElementById("recibo-pagamento").value,
+            statusPagamento: document.getElementById("recibo-status-pagamento").value || "Aguardando pagamento",
             obs: document.getElementById("recibo-obs").value,
             // Dados da empresa para a página pública
             companyName: state.companyName,
@@ -2315,6 +2513,7 @@ Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos d
         const descricao = document.getElementById("recibo-descricao").value;
         const valor = parseFloat(document.getElementById("recibo-valor").value) || 0;
         const pagamento = document.getElementById("recibo-pagamento").value;
+        const statusPagamento = document.getElementById("recibo-status-pagamento").value || "Aguardando pagamento";
         const obs = document.getElementById("recibo-obs").value;
 
         if (!cliente || !descricao || valor <= 0) {
@@ -2329,6 +2528,7 @@ Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos d
             descricao,
             valor,
             pagamento,
+            statusPagamento,
             obs
         };
 
@@ -2488,6 +2688,12 @@ Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos d
     document.getElementById("btn-salvar-configuracoes").addEventListener("click", () => {
         state.companyName = document.getElementById("config-empresa-nome").value;
         state.companyCnpj = document.getElementById("config-empresa-cnpj").value;
+        const geminiKey = document.getElementById("config-gemini-key").value.trim();
+        if (geminiKey) {
+            localStorage.setItem("mp_gemini_api_key", geminiKey);
+        } else {
+            localStorage.removeItem("mp_gemini_api_key");
+        }
         document.getElementById("display-company-name").textContent = state.companyName;
         alert("Dados salvos!");
     });
@@ -2918,6 +3124,28 @@ window.app = {
         if (confirm("Deseja deletar este modelo de produto?")) {
             dbDelete("produtos", id);
         }
+    },
+
+    addSuggestedBudgetMaterial: (materialId) => {
+        const material = state.materiais.find(item => item.id === materialId);
+        if (!material) return;
+        const qtd = parseFloat(prompt(`Quantidade de ${material.nome} para este orçamento (${material.unidade})`, "1")) || 0;
+        if (qtd <= 0) return;
+
+        const existing = state.orcMateriaisVinculados.find(item => item.codigo === material.codigo);
+        if (existing) {
+            existing.quantidade += qtd;
+            existing.total = existing.quantidade * existing.preco;
+        } else {
+            state.orcMateriaisVinculados.push({
+                codigo: material.codigo,
+                nome: material.nome,
+                quantidade: qtd,
+                preco: material.precoCompra || 0,
+                total: qtd * (material.precoCompra || 0)
+            });
+        }
+        renderOrcMaterialsTable();
     },
 
     approveBudget: (id) => {

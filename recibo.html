@@ -136,6 +136,12 @@
             font-size: 14px;
         }
 
+        .receipt-alert.pending {
+            background-color: rgba(245, 158, 11, 0.08);
+            border-color: rgba(245, 158, 11, 0.2);
+            color: #b45309;
+        }
+
         .receipt-details {
             margin-bottom: 35px;
         }
@@ -356,9 +362,9 @@
             </div>
 
             <div class="receipt-body">
-                <div class="receipt-alert">
+                <div class="receipt-alert" id="receipt-alert">
                     <i data-lucide="check-circle-2"></i>
-                    <span>COMPROVANTE DE PAGAMENTO CONFIRMADO</span>
+                    <span id="receipt-alert-text">COMPROVANTE DE PAGAMENTO CONFIRMADO</span>
                 </div>
 
                 <div class="receipt-details">
@@ -381,6 +387,10 @@
                     <div class="detail-row">
                         <span class="detail-label">Forma de Pagamento:</span>
                         <span class="detail-val" id="payment-method">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Status de Pagamento:</span>
+                        <span class="detail-val" id="payment-status">Aguardando pagamento</span>
                     </div>
                 </div>
 
@@ -493,6 +503,17 @@
                 document.getElementById("client-name").textContent = recibo.cliente || "-";
                 document.getElementById("receipt-date").textContent = formatDateBR(recibo.data) || "-";
                 document.getElementById("payment-method").textContent = recibo.metodoPagamento || "PIX";
+                const paymentStatus = recibo.statusPagamento || "Aguardando pagamento";
+                document.getElementById("payment-status").textContent = paymentStatus;
+                const alertBox = document.getElementById("receipt-alert");
+                const alertText = document.getElementById("receipt-alert-text");
+                if (paymentStatus === "Pago") {
+                    alertBox.classList.remove("pending");
+                    alertText.textContent = "COMPROVANTE DE PAGAMENTO CONFIRMADO";
+                } else {
+                    alertBox.classList.add("pending");
+                    alertText.textContent = "PAGAMENTO AINDA PENDENTE";
+                }
                 document.getElementById("receipt-desc").textContent = recibo.descricao || "";
                 document.getElementById("receipt-val").textContent = formatCurrency(recibo.valor);
 

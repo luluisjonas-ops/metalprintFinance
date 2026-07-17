@@ -820,6 +820,22 @@
                     </div>
 
                     <div class="card mt-3">
+                        <div class="card-header">
+                            <h3 class="card-title">Seleção rápida por tipo de serviço</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="ai-suggestions" id="orc-service-chips">
+                                <button type="button" class="ai-suggest-btn" data-service="lona">Lonas</button>
+                                <button type="button" class="ai-suggest-btn" data-service="adesivo">Adesivos</button>
+                                <button type="button" class="ai-suggest-btn" data-service="impressao">Impressão</button>
+                                <button type="button" class="ai-suggest-btn" data-service="faixada">Faixadas</button>
+                                <button type="button" class="ai-suggest-btn" data-service="acrilico">Acrílico / ACM</button>
+                            </div>
+                            <div class="text-sm text-secondary mt-2" id="orc-service-selected-label">Selecione um tipo para preparar o orçamento.</div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-3">
                         <div class="table-responsive">
                             <table class="table" id="table-orcamentos">
                                 <thead>
@@ -1816,6 +1832,33 @@
                 </div>
 
                 <div class="ai-budget-header">
+                    <i data-lucide="layers" style="width:16px;height:16px"></i>
+                    <span class="font-bold">Tipo de Serviço e IA de Materiais</span>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Tipo de Serviço</label>
+                        <select id="orc-tipo-servico" class="form-control">
+                            <option value="personalizado">Personalizado / Outro</option>
+                            <option value="lona">Lona / Banner</option>
+                            <option value="adesivo">Adesivo / Vinil</option>
+                            <option value="faixada">Faixada / Fachada</option>
+                            <option value="impressao">Impressão / Aplicação</option>
+                            <option value="acrilico">Acrílico / ACM</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Objetivo do projeto</label>
+                        <input type="text" id="orc-objetivo" class="form-control" placeholder="Ex: Externo, instalação rápida, acabamento premium">
+                    </div>
+                </div>
+                <div class="alert alert-info" id="budget-ai-help" style="margin-top: 8px;">
+                    <i data-lucide="sparkles"></i>
+                    <span>A IA vai sugerir materiais e verificar se há estoque disponível para este tipo de serviço.</span>
+                </div>
+                <div class="text-sm text-secondary mt-2" id="orc-material-recommendations"></div>
+
+                <div class="ai-budget-header" style="margin-top: 12px;">
                     <i data-lucide="package" style="width:16px;height:16px"></i>
                     <span class="font-bold">Materiais Utilizados</span>
                 </div>
@@ -1849,6 +1892,20 @@
                     <div class="form-group">
                         <label class="form-label">Validade do Orçamento</label>
                         <input type="date" id="orc-validade" class="form-control">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Instalação</label>
+                        <select id="orc-instalação" class="form-control">
+                            <option value="metalprint">Metal Print</option>
+                            <option value="cliente">Cliente</option>
+                            <option value="nao-aplica">Não aplica</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Deslocamento / Transporte (R$)</label>
+                        <input type="number" step="0.01" id="orc-deslocamento" class="form-control" value="0">
                     </div>
                 </div>
 
@@ -1918,9 +1975,19 @@
                         </select>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Observações (opcional)</label>
-                    <input type="text" id="recibo-obs" class="form-control" placeholder="Ex: Pagamento conforme acordo contratual">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Status de Pagamento</label>
+                        <select id="recibo-status-pagamento" class="form-control">
+                            <option value="Aguardando pagamento">Aguardando pagamento</option>
+                            <option value="Pago">Pago</option>
+                            <option value="Não pago ainda">Não pago ainda</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Observações rápidas</label>
+                        <input type="text" id="recibo-obs" class="form-control" placeholder="Ex: Pagamento conforme acordo contratual">
+                    </div>
                 </div>
                 <div class="flex-end gap-2 border-top pt-3">
                     <button type="button" class="btn btn-outline" data-close="modal-recibo">Cancelar</button>
