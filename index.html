@@ -815,8 +815,47 @@
                     <div class="action-bar">
                         <input type="text" id="orc-search" class="form-control w-300" placeholder="Buscar orçamentos...">
                         <button class="btn btn-primary btn-icon-text" id="btn-novo-orcamento">
-                            <i data-lucide="sparkles"></i> Novo Orçamento com IA
+                            <i data-lucide="sparkles"></i> Novo Orçamento Inteligente
                         </button>
+                    </div>
+
+                    <!-- Cards de Resumo Executivo do Orçamento Total -->
+                    <div class="metrics-grid mt-3">
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <span class="metric-title">Total de Orçamentos</span>
+                                <div class="metric-icon primary"><i data-lucide="calculator"></i></div>
+                            </div>
+                            <div class="metric-value" id="orc-metric-count">0</div>
+                            <span class="metric-change neutral">Propostas Emitidas</span>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <span class="metric-title">Valor Aprovado</span>
+                                <div class="metric-icon success"><i data-lucide="check-circle-2"></i></div>
+                            </div>
+                            <div class="metric-value text-success" id="orc-metric-aprovado">R$ 0,00</div>
+                            <span class="metric-change positive">Convertidos em Venda</span>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <span class="metric-title">Valor Pendente</span>
+                                <div class="metric-icon warning"><i data-lucide="clock"></i></div>
+                            </div>
+                            <div class="metric-value text-warning" id="orc-metric-pendente">R$ 0,00</div>
+                            <span class="metric-change neutral">Aguardando Cliente</span>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <span class="metric-title">Taxa de Conversão</span>
+                                <div class="metric-icon info"><i data-lucide="trending-up"></i></div>
+                            </div>
+                            <div class="metric-value" id="orc-metric-conversao">0%</div>
+                            <span class="metric-change positive">Aprovação Comercial</span>
+                        </div>
                     </div>
 
                     <div class="card mt-3">
@@ -1212,10 +1251,17 @@
                             <div class="grid-2">
                                 <div class="form-group">
                                     <label class="form-label">Chave de API do Gemini (IA Comercial/Gráfica)</label>
-                                    <input type="password" id="config-gemini-key" class="form-control" placeholder="Chave de API do Gemini (Cole aqui sua chave)">
+                                    <input type="password" id="config-gemini-key" class="form-control" placeholder="Chave de API do Gemini (Cole aqui sua chave AIza...)">
+                                    <span class="text-xs text-secondary mt-1" style="display:block;">
+                                        Obtenha uma chave grátis em: <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--color-primary); font-weight:600;">aistudio.google.com/app/apikey</a>
+                                    </span>
                                 </div>
                                 <div class="form-group">
-                                    <!-- Spacer/Empty form group for alignment -->
+                                    <label class="form-label">Status da Conexão IA</label>
+                                    <div style="padding:10px; background:var(--color-primary-light); border-radius:8px; font-size:13px; color:var(--color-primary); font-weight:600;">
+                                        <i data-lucide="sparkles" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>
+                                        Cálculo Inteligente e IA Comercial Ativados
+                                    </div>
                                 </div>
                             </div>
 
@@ -1909,11 +1955,41 @@
                     </div>
                 </div>
 
+                <!-- Painel de Cálculo em Tempo Real (Orçamento Total) -->
+                <div class="live-budget-box" id="live-budget-summary-box">
+                    <div class="live-budget-header">
+                        <i data-lucide="calculator" style="width:18px;height:18px"></i>
+                        <span>Resumo Financeiro em Tempo Real (Orçamento Total)</span>
+                    </div>
+                    <div class="live-budget-grid">
+                        <div class="live-budget-item">
+                            <span class="lbl">Área Total</span>
+                            <span class="val" id="live-orc-area">1.00 m²</span>
+                        </div>
+                        <div class="live-budget-item">
+                            <span class="lbl">Custo Matéria-Prima</span>
+                            <span class="val text-danger" id="live-orc-mat-cost">R$ 0,00</span>
+                        </div>
+                        <div class="live-budget-item">
+                            <span class="lbl">Custo Operacional Total</span>
+                            <span class="val text-danger" id="live-orc-total-cost">R$ 15,00</span>
+                        </div>
+                        <div class="live-budget-item main-highlight">
+                            <span class="lbl">Preço Final Sugerido</span>
+                            <span class="val text-success" id="live-orc-final-price">R$ 180,00</span>
+                        </div>
+                    </div>
+                    <div class="live-budget-sub">
+                        <span>Lucro Estimado: <strong id="live-orc-profit" class="text-success">R$ 165,00 (91%)</strong></span>
+                        <span>À Vista (5% Desc): <strong id="live-orc-cash-discount">R$ 171,00</strong></span>
+                    </div>
+                </div>
+
                 <!-- AI Calculation Section -->
                 <div class="ai-calc-section" id="ai-calc-section" style="display:none">
                     <div class="ai-calc-header">
                         <i data-lucide="sparkles" style="width:18px;height:18px"></i>
-                        <span>Análise da IA Gemini</span>
+                        <span>Análise Avançada da IA Gemini</span>
                         <div class="ai-loading" id="ai-calc-loading" style="display:none"></div>
                     </div>
                     <div id="ai-calc-result" class="ai-calc-result"></div>
@@ -2006,6 +2082,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
+    <!-- html2pdf.js para Geração Direta de PDFs no Navegador -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <!-- Script Link -->
     <script src="script.js"></script>
 </body>

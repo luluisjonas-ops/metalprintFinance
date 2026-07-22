@@ -523,89 +523,131 @@
 
             let db = null;
             try {
-                firebase.initializeApp(firebaseConfig);
-                db = firebase.firestore();
+                if (typeof firebase !== 'undefined') {
+                    if (!firebase.apps.length) {
+                        firebase.initializeApp(firebaseConfig);
+                    }
+                    db = firebase.firestore();
+                }
             } catch (e) {
-                console.error("Falha ao inicializar o Firebase:", e);
-                showError("Erro de Conexão", "Não foi possível conectar ao banco de dados em nuvem.");
-                return;
+                console.warn("Firebase não inicializado, usando leituras de backup:", e);
             }
 
             const urlParams = new URLSearchParams(window.location.search);
             const orcamentoId = urlParams.get('id');
+            const dataParam = urlParams.get('d') || urlParams.get('data');
 
-            if (!orcamentoId) {
+            if (!orcamentoId && !dataParam) {
                 showError("Link Inválido", "O código identificador do orçamento não foi informado na URL.");
                 return;
             }
 
-            try {
-                const docRef = db.collection("orcamentos").doc(orcamentoId);
-                const docSnap = await docRef.get();
+            let orc = null;
+            let docRef = null;
 
-                if (!docSnap.exists) {
-                    showError("Orçamento não encontrado", "O orçamento solicitado expirou ou não está mais ativo.");
-                    return;
+            // 1. Tenta Firestore
+            if (orcamentoId && db) {
+                try {
+                    docRef = db.collection("orcamentos").doc(orcamentoId);
+                    const docSnap = await docRef.get();
+                    if (docSnap.exists) {
+                        orc = docSnap.data();
+                    }
+                } catch (err) {
+                    console.warn("Aviso ao buscar orçamento no Firestore:", err);
                 }
+            }
 
-                const orc = docSnap.data();
-
-                // Renderizar
-                document.getElementById("company-name").textContent = orc.companyName || "Metal Print";
-                document.getElementById("budget-num").textContent = `Nº ORC-${orcamentoId.substring(orcamentoId.length - 6).toUpperCase()}`;
-                document.getElementById("client-name").textContent = orc.cliente || "-";
-                document.getElementById("client-doc").textContent = orc.clienteDocumento || "Não informado";
-                document.getElementById("issue-date").textContent = formatDateBR(orc.data) || "-";
-                document.getElementById("expiry-date").textContent = formatDateBR(orc.validade) || "30 dias úteis";
-                
-                document.getElementById("item-desc").textContent = orc.produto || orc.descricao || "Comunicação Visual Personalizada";
-                document.getElementById("item-dim").textContent = `${orc.largura || 1.0}m x ${orc.altura || 1.0}m`;
-                document.getElementById("item-qty").textContent = `${orc.quantidade || 1} un`;
-                document.getElementById("item-finish").textContent = orc.acabamento || "Refile simples";
-
-                const precoVenda = orc.valorFinal || orc.valorSugerido || 0;
-                document.getElementById("total-val").textContent = formatCurrency(precoVenda);
-
-                // Configurar Status Alert
-                const alertDiv = document.getElementById("status-alert");
-                const alertText = document.getElementById("status-text");
-                const alertIcon = document.getElementById("status-icon");
-
-                if (orc.status === "Aprovado") {
-                    alertDiv.className = "budget-alert budget-alert-approved";
-                    alertText.textContent = "ESTE ORÇAMENTO JÁ FOI APROVADO PELO CLIENTE";
-                    alertIcon.setAttribute("data-lucide", "check-circle-2");
-                    document.getElementById("btn-approve").style.display = "none";
-                } else {
-                    alertDiv.className = "budget-alert budget-alert-pending";
-                    alertText.textContent = "ESTE ORÇAMENTO ESTÁ PENDENTE DE SUA APROVAÇÃO";
-                    alertIcon.setAttribute("data-lucide", "clock");
+            // 2. Fallback: URL Parameter (d=...)
+            if (!orc && dataParam) {
+                try {
+                    const jsonStr = decodeURIComponent(escape(atob(decodeURIComponent(dataParam))));
+                    orc = JSON.parse(jsonStr);
+                    console.log("Orçamento recuperado do parâmetro de URL resiliente.");
+                } catch (err) {
+                    console.warn("Falha ao decodificar orçamento da URL:", err);
                 }
+            }
 
-                // Ação Aprovar
-                document.getElementById("btn-approve").addEventListener("click", async () => {
+            // 3. Fallback: LocalStorage
+            if (!orc && orcamentoId) {
+                try {
+                    const localOrcs = JSON.parse(localStorage.getItem("mp_finance_orcamentos") || "[]");
+                    orc = localOrcs.find(o => o.id === orcamentoId);
+                    if (orc) console.log("Orçamento recuperado da memória local.");
+                } catch (err) {
+                    console.warn("Falha ao buscar orçamento no LocalStorage:", err);
+                }
+            }
+
+            if (!orc) {
+                showError("Orçamento não encontrado", "O orçamento solicitado expirou ou não está mais ativo.");
+                return;
+            }
+
+            // Renderizar
+            document.getElementById("company-name").textContent = orc.companyName || "Metal Print";
+            document.getElementById("budget-num").textContent = `Nº ORC-${orcamentoId ? orcamentoId.substring(orcamentoId.length - 6).toUpperCase() : "000000"}`;
+            document.getElementById("client-name").textContent = orc.cliente || "-";
+            document.getElementById("client-doc").textContent = orc.clienteDocumento || "Não informado";
+            document.getElementById("issue-date").textContent = formatDateBR(orc.data) || "-";
+            document.getElementById("expiry-date").textContent = formatDateBR(orc.validade) || "30 dias úteis";
+            
+            document.getElementById("item-desc").textContent = orc.produto || orc.descricao || "Comunicação Visual Personalizada";
+            document.getElementById("item-dim").textContent = `${orc.largura || 1.0}m x ${orc.altura || 1.0}m`;
+            document.getElementById("item-qty").textContent = `${orc.quantidade || 1} un`;
+            document.getElementById("item-finish").textContent = orc.acabamento || "Refile simples";
+
+            const precoVenda = orc.valorFinal || orc.valorSugerido || 0;
+            document.getElementById("total-val").textContent = formatCurrency(precoVenda);
+
+            // Configurar Status Alert
+            const alertDiv = document.getElementById("status-alert");
+            const alertText = document.getElementById("status-text");
+            const alertIcon = document.getElementById("status-icon");
+
+            if (orc.status === "Aprovado") {
+                alertDiv.className = "budget-alert budget-alert-approved";
+                alertText.textContent = "ESTE ORÇAMENTO JÁ FOI APROVADO PELO CLIENTE";
+                alertIcon.setAttribute("data-lucide", "check-circle-2");
+                const btnApprove = document.getElementById("btn-approve");
+                if (btnApprove) btnApprove.style.display = "none";
+            } else {
+                alertDiv.className = "budget-alert budget-alert-pending";
+                alertText.textContent = "ESTE ORÇAMENTO ESTÁ PENDENTE DE SUA APROVAÇÃO";
+                alertIcon.setAttribute("data-lucide", "clock");
+            }
+
+            // Ação Aprovar
+            const btnApprove = document.getElementById("btn-approve");
+            if (btnApprove) {
+                btnApprove.addEventListener("click", async () => {
                     if (confirm("Você confirma a aprovação deste orçamento comercial?")) {
                         try {
-                            await docRef.update({ status: "Aprovado" });
+                            if (docRef) {
+                                await docRef.update({ status: "Aprovado" }).catch(() => {});
+                            }
                             
                             // Adicionar aviso para a gráfica gerando uma OS na fila automaticamente
                             const osNum = `OS-${new Date().getFullYear()}-${String(Date.now()).substring(String(Date.now()).length - 4)}`;
-                            await db.collection("ordens_servico").add({
-                                companyId: orc.companyId || "metal_print_cv_demo",
-                                numero: osNum,
-                                cliente: orc.cliente,
-                                descricao: `[APROVADO VIA LINK] ${orc.produto || orc.descricao || 'Serviço Sob Medida'} (${orc.largura}x${orc.altura}m - ${orc.quantidade}un)`,
-                                prazo: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-                                responsavel: "Aguardando Atribuição",
-                                materiaisUtilizados: [],
-                                custoExtra: (orc.instalacao || 0) + (orc.frete || 0),
-                                valorTotal: orc.valorFinal || orc.valorSugerido,
-                                status: "Aprovado / Fila",
-                                financeiroStatus: "Pendente",
-                                metodoRecebimento: "PIX",
-                                dataFinalizado: null,
-                                dataCriacao: new Date().toISOString()
-                            });
+                            if (db) {
+                                await db.collection("ordens_servico").add({
+                                    companyId: orc.companyId || "metal_print_cv_demo",
+                                    numero: osNum,
+                                    cliente: orc.cliente,
+                                    descricao: `[APROVADO VIA LINK] ${orc.produto || orc.descricao || 'Serviço Sob Medida'} (${orc.largura}x${orc.altura}m - ${orc.quantidade}un)`,
+                                    prazo: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+                                    responsavel: "Aguardando Atribuição",
+                                    materiaisUtilizados: [],
+                                    custoExtra: (orc.instalacao || 0) + (orc.frete || 0),
+                                    valorTotal: orc.valorFinal || orc.valorSugerido,
+                                    status: "Aprovado / Fila",
+                                    financeiroStatus: "Pendente",
+                                    metodoRecebimento: "PIX",
+                                    dataFinalizado: null,
+                                    dataCriacao: new Date().toISOString()
+                                }).catch(() => {});
+                            }
 
                             alert("Orçamento aprovado com sucesso! Entraremos em contato para os próximos passos.");
                             window.location.reload();
@@ -615,37 +657,34 @@
                         }
                     }
                 });
+            }
 
-                // Compartilhar WhatsApp
-                document.getElementById("btn-whatsapp").addEventListener("click", () => {
-                    const whatsText = encodeURIComponent(`Olá! Estou visualizando o Orçamento da Metal Print no valor de ${formatCurrency(precoVenda)}. Quero tirar algumas dúvidas.`);
-                    window.open(`https://api.whatsapp.com/send?text=${whatsText}`, '_blank');
-                });
+            // Compartilhar WhatsApp
+            document.getElementById("btn-whatsapp").addEventListener("click", () => {
+                const whatsText = encodeURIComponent(`Olá! Estou visualizando o Orçamento da Metal Print no valor de ${formatCurrency(precoVenda)}. Quero tirar algumas dúvidas.`);
+                window.open(`https://api.whatsapp.com/send?text=${whatsText}`, '_blank');
+            });
 
-                document.getElementById("loader").style.display = "none";
-                document.getElementById("budget-content").style.display = "block";
-                lucide.createIcons();
+            document.getElementById("loader").style.display = "none";
+            document.getElementById("budget-content").style.display = "block";
+            lucide.createIcons();
 
-                // 5. Incrementar Visualizações e Atualizar Status (Quente/Frio/Morno) no Firebase
-                const viewsCount = (orc.visualizacoes || 0) + 1;
-                
-                await docRef.update({
-                    visualizacoes: viewsCount,
-                    ultimaVisualizacao: new Date().toISOString()
-                });
-
-                // Registrar o histórico detalhado
-                await db.collection("visualizacoes_orcamentos").add({
-                    orcamentoId: orcamentoId,
-                    timestamp: new Date().toISOString(),
-                    device: navigator.userAgent
-                });
-
-                console.log(`Visualização orçamento registrada. Total: ${viewsCount}`);
-
-            } catch (err) {
-                console.error("Erro ao buscar o orçamento:", err);
-                showError("Erro de Servidor", "Ocorreu uma falha ao obter as informações comerciais.");
+            // Incrementar Visualizações no Firestore
+            if (docRef && db) {
+                try {
+                    const viewsCount = (orc.visualizacoes || 0) + 1;
+                    docRef.update({
+                        visualizacoes: viewsCount,
+                        ultimaVisualizacao: new Date().toISOString()
+                    }).catch(() => {});
+                    db.collection("visualizacoes_orcamentos").add({
+                        orcamentoId: orcamentoId || "url_shared",
+                        timestamp: new Date().toISOString(),
+                        device: navigator.userAgent
+                    }).catch(() => {});
+                } catch (e) {
+                    console.warn("Não foi possível registrar estatísticas de visualização:", e);
+                }
             }
         });
 

@@ -1659,3 +1659,77 @@ body.dark-mode .bg-accent-glow {
         border-radius: var(--border-radius-sm);
     }
 }
+
+/* ==========================================================================
+   PAINEL DE ORÇAMENTO TOTAL EM TEMPO REAL (LIVE BUDGET BOX)
+   ========================================================================== */
+.live-budget-box {
+    background: linear-gradient(135deg, var(--bg-card), var(--bg-app));
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--color-primary);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 12px;
+    box-shadow: var(--shadow-sm);
+}
+
+.live-budget-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: 12px;
+}
+
+.live-budget-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+@media (max-width: 768px) {
+    .live-budget-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.live-budget-item {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.live-budget-item.main-highlight {
+    background: rgba(99, 102, 241, 0.08);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.live-budget-item .lbl {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.live-budget-item .val {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--color-text-primary);
+}
+
+.live-budget-sub {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}

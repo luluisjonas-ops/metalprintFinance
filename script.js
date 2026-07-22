@@ -42,45 +42,168 @@ const state = {
     orcMateriaisVinculados: []
 };
 
-// Configuração Gemini API
+// Helper para codificação segura de objetos na URL
+function encodePayload(obj) {
+    try {
+        const jsonStr = JSON.stringify(obj);
+        return encodeURIComponent(btoa(unescape(encodeURIComponent(jsonStr))));
+    } catch (e) {
+        return "";
+    }
+}
+
+function buildPublicReceiptUrl(recibo) {
+    const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
+    const encoded = encodePayload(recibo);
+    return `${baseUrl}recibo.html?id=${recibo.id}${encoded ? '&d=' + encoded : ''}`;
+}
+
+function buildPublicBudgetUrl(orcamento) {
+    const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
+    const encoded = encodePayload(orcamento);
+    return `${baseUrl}orcamento-publico.html?id=${orcamento.id}${encoded ? '&d=' + encoded : ''}`;
+}
+
+// Configuração Gemini API com Rotação de Modelos e Tratamento de Cota
 async function callGeminiAPI(promptText, systemInstruction = "") {
     const customKey = localStorage.getItem("mp_gemini_api_key");
     const key = customKey && customKey.trim() !== "" ? customKey.trim() : "AIzaSyA_IIOZ9J3YvrWr__ipeoolT6m1bGQ82kk";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
     
-    const requestBody = {
-        contents: [{
-            parts: [{ text: promptText }]
-        }]
-    };
+    // Lista de modelos suportados para fallback sequencial
+    const candidateModels = [
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-2.0-flash-lite"
+    ];
     
-    if (systemInstruction) {
-        requestBody.systemInstruction = {
-            parts: [{ text: systemInstruction }]
+    let lastErrorMessage = "";
+
+    for (const modelName of candidateModels) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`;
+        
+        const requestBody = {
+            contents: [{
+                parts: [{ text: promptText }]
+            }]
         };
+        
+        if (systemInstruction) {
+            requestBody.systemInstruction = {
+                parts: [{ text: systemInstruction }]
+            };
+        }
+        
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestBody)
+            });
+            
+            const resData = await response.json();
+            
+            if (response.ok && resData.candidates && resData.candidates.length > 0) {
+                return resData.candidates[0].content.parts[0].text;
+            }
+            
+            if (resData.error) {
+                lastErrorMessage = resData.error.message || `Erro no modelo ${modelName}`;
+                console.warn(`[Gemini API Warning] Modelo ${modelName} falhou:`, lastErrorMessage);
+                
+                // Se for limite de cota (429 ou quota limit), continua para o próximo modelo
+                if (response.status === 429 || lastErrorMessage.toLowerCase().includes("quota")) {
+                    continue;
+                }
+            }
+        } catch (e) {
+            lastErrorMessage = e.message;
+            console.warn(`[Gemini API Exception] Erro no modelo ${modelName}:`, e);
+        }
     }
     
-    try {
-        const response = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestBody)
-        });
-        
-        if (!response.ok) {
-            const errData = await response.json();
-            throw new Error(errData.error?.message || "Erro de comunicação com o servidor Gemini.");
-        }
-        
-        const resData = await response.json();
-        if (!resData.candidates || resData.candidates.length === 0) {
-            throw new Error("Sem resposta válida do Gemini.");
-        }
-        return resData.candidates[0].content.parts[0].text;
-    } catch (e) {
-        console.error("Erro na API Gemini:", e);
-        return `Erro de API Gemini: ${e.message}. Por favor, configure uma Chave API válida nas configurações da plataforma.`;
+    throw new Error(lastErrorMessage || "Limite de cota de API atingido ou chave API não configurada.");
+}
+
+// Motor de Cálculo Matemático Offline (Comunicação Visual)
+function calculateLocalBudget(largura, altura, quantidade, margem, materiais = [], instalacao = "nao-aplica", deslocamento = 0) {
+    const w = parseFloat(largura) || 1.0;
+    const h = parseFloat(altura) || 1.0;
+    const q = parseInt(quantidade, 10) || 1;
+    const m = parseFloat(margem) || 50;
+    const d = parseFloat(deslocamento) || 0;
+
+    const areaUnit = w * h;
+    const areaTotal = areaUnit * q;
+
+    // Custo dos materiais vinculados
+    let custoMaterial = materiais.reduce((acc, item) => acc + (parseFloat(item.total) || 0), 0);
+    if (custoMaterial <= 0) {
+        custoMaterial = areaTotal * 25; // Estimativa média por m²
     }
+
+    const perdaMat = custoMaterial * 0.10;
+    const custoProducao = (areaTotal * 15) + perdaMat;
+    const custoTotal = custoMaterial + custoProducao;
+
+    let precoSugerido = m < 100 ? (custoTotal / (1 - (m / 100))) : custoTotal * (1 + (m / 100));
+
+    if (instalacao === "metalprint") {
+        precoSugerido += 150;
+    }
+    precoSugerido += d;
+
+    const lucroEstimado = precoSugerido - custoTotal;
+    const margemEfetiva = precoSugerido > 0 ? Math.round((lucroEstimado / precoSugerido) * 100) : 0;
+    const descontoAvista = precoSugerido * 0.95;
+
+    return {
+        areaTotal: parseFloat(areaTotal.toFixed(2)),
+        custoMaterial: parseFloat(custoMaterial.toFixed(2)),
+        custoProducao: parseFloat(custoProducao.toFixed(2)),
+        custoTotal: parseFloat(custoTotal.toFixed(2)),
+        precoSugerido: parseFloat(precoSugerido.toFixed(2)),
+        lucroEstimado: parseFloat(lucroEstimado.toFixed(2)),
+        margemEfetiva: margemEfetiva,
+        descontoAvista: parseFloat(descontoAvista.toFixed(2)),
+        tempoProducaoDias: areaTotal > 10 ? 3 : 1.5,
+        explicacao: `Cálculo automático: Área total de ${areaTotal.toFixed(2)} m² (${q} un). Custo de matéria-prima ${formatCurrency(custoMaterial)} e produção ${formatCurrency(custoProducao)}. Preço final recomendado com ${m}% de margem comercial.`
+    };
+}
+
+function updateLiveBudgetCalc() {
+    const largEl = document.getElementById("orc-largura");
+    const altEl = document.getElementById("orc-altura");
+    const qtdEl = document.getElementById("orc-quantidade");
+    const margEl = document.getElementById("orc-margem");
+    const instEl = document.getElementById("orc-instalação");
+    const desEl = document.getElementById("orc-deslocamento");
+
+    if (!largEl || !altEl) return;
+
+    const res = calculateLocalBudget(
+        largEl.value,
+        altEl.value,
+        qtdEl.value,
+        margEl ? margEl.value : 50,
+        state.orcMateriaisVinculados || [],
+        instEl ? instEl.value : "nao-aplica",
+        desEl ? desEl.value : 0
+    );
+
+    const areaBox = document.getElementById("live-orc-area");
+    const matBox = document.getElementById("live-orc-mat-cost");
+    const totalCostBox = document.getElementById("live-orc-total-cost");
+    const finalPriceBox = document.getElementById("live-orc-final-price");
+    const profitBox = document.getElementById("live-orc-profit");
+    const cashDescBox = document.getElementById("live-orc-cash-discount");
+
+    if (areaBox) areaBox.textContent = `${res.areaTotal.toFixed(2)} m²`;
+    if (matBox) matBox.textContent = formatCurrency(res.custoMaterial);
+    if (totalCostBox) totalCostBox.textContent = formatCurrency(res.custoTotal);
+    if (finalPriceBox) finalPriceBox.textContent = formatCurrency(res.precoSugerido);
+    if (profitBox) profitBox.textContent = `${formatCurrency(res.lucroEstimado)} (${res.margemEfetiva}%)`;
+    if (cashDescBox) cashDescBox.textContent = formatCurrency(res.descontoAvista);
 }
 
 // Instâncias Globais de Gráficos (Chart.js)
@@ -207,25 +330,17 @@ async function dbSave(collectionName, data) {
         data.id = collectionName + "_" + Date.now();
     }
     
+    // Atualiza o estado local instantaneamente para resposta imediata da UI
+    dbSaveLocal(collectionName, data);
+    
+    // Grava assincronamente no Firestore
     if (firebaseActive && db) {
-        let retries = 3;
-        while (retries > 0) {
-            try {
-                await db.collection(collectionName).doc(data.id).set(data);
-                break; // Sucesso, sai do loop
-            } catch (e) {
-                retries--;
-                console.warn(`Erro ao salvar no Firestore. Tentativas restantes: ${retries}`, e);
-                if (retries === 0) {
-                    console.error("Falha persistente ao salvar no Firestore. Salvando localmente...", e);
-                    dbSaveLocal(collectionName, data);
-                } else {
-                    await new Promise(resolve => setTimeout(resolve, 1000)); // Aguarda 1 segundo antes do retry
-                }
-            }
+        try {
+            await db.collection(collectionName).doc(data.id).set(data, { merge: true });
+            console.log(`[Cloud Sync] Documento ${data.id} salvo no Firestore (${collectionName}).`);
+        } catch (e) {
+            console.warn(`[Cloud Sync Warning] Erro ao sincronizar ${collectionName} na nuvem:`, e);
         }
-    } else {
-        dbSaveLocal(collectionName, data);
     }
 }
 
@@ -246,25 +361,16 @@ function dbSaveLocal(collectionName, data) {
 
 // Remove dados de forma automática
 async function dbDelete(collectionName, id) {
+    // Remove do estado local instantaneamente
+    dbDeleteLocal(collectionName, id);
+    
     if (firebaseActive && db) {
-        let retries = 3;
-        while (retries > 0) {
-            try {
-                await db.collection(collectionName).doc(id).delete();
-                break; // Sucesso
-            } catch (e) {
-                retries--;
-                console.warn(`Erro ao deletar no Firestore. Tentativas restantes: ${retries}`, e);
-                if (retries === 0) {
-                    console.error("Falha persistente ao deletar no Firestore. Deletando localmente...", e);
-                    dbDeleteLocal(collectionName, id);
-                } else {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-            }
+        try {
+            await db.collection(collectionName).doc(id).delete();
+            console.log(`[Cloud Sync] Item ${id} excluído do Firestore (${collectionName}).`);
+        } catch (e) {
+            console.warn(`[Cloud Sync Warning] Erro ao deletar no Firestore (${collectionName}):`, e);
         }
-    } else {
-        dbDeleteLocal(collectionName, id);
     }
 }
 
@@ -1122,13 +1228,27 @@ function renderOrdensServico() {
 // --- VIEW: ORÇAMENTOS ---
 function renderOrcamentos() {
     const tbody = document.querySelector("#table-orcamentos tbody");
+    if (!tbody) return;
     tbody.innerHTML = "";
 
     const search = document.getElementById("orc-search").value.toLowerCase();
     const sortedOrc = [...state.orcamentos].sort((a, b) => b.data.localeCompare(a.data));
     let rowsCount = 0;
 
+    let totalAprovadoVal = 0;
+    let totalPendenteVal = 0;
+    let totalCount = sortedOrc.length;
+    let aprovadosCount = 0;
+
     sortedOrc.forEach(o => {
+        const val = parseFloat(o.valorFinal || o.valorSugerido) || 0;
+        if (o.status === 'Aprovado') {
+            totalAprovadoVal += val;
+            aprovadosCount++;
+        } else {
+            totalPendenteVal += val;
+        }
+
         if (search && !o.cliente.toLowerCase().includes(search) && !o.produto.toLowerCase().includes(search)) return;
 
         rowsCount++;
@@ -1144,7 +1264,7 @@ function renderOrcamentos() {
             <td><strong>${o.cliente}</strong></td>
             <td>${o.produto}<br><span class="text-xs text-secondary">${getBudgetServiceLabel(o.tipoServico || 'personalizado')}</span></td>
             <td>${o.largura}x${o.altura} m (${o.quantidade} un)</td>
-            <td class="font-bold text-success">${formatCurrency(o.valorFinal)}</td>
+            <td class="font-bold text-success">${formatCurrency(val)}</td>
             <td>
                 <span class="table-badge ${o.status === 'Aprovado' ? 'table-badge-success' : 'table-badge-warning'}">
                     ${o.status}
@@ -1161,6 +1281,20 @@ function renderOrcamentos() {
         `;
         tbody.appendChild(row);
     });
+
+    // Atualizar métricas do Orçamento Total
+    const metricCount = document.getElementById("orc-metric-count");
+    const metricAprovado = document.getElementById("orc-metric-aprovado");
+    const metricPendente = document.getElementById("orc-metric-pendente");
+    const metricConversao = document.getElementById("orc-metric-conversao");
+
+    if (metricCount) metricCount.textContent = totalCount;
+    if (metricAprovado) metricAprovado.textContent = formatCurrency(totalAprovadoVal);
+    if (metricPendente) metricPendente.textContent = formatCurrency(totalPendenteVal);
+    if (metricConversao) {
+        const rate = totalCount > 0 ? Math.round((aprovadosCount / totalCount) * 100) : 0;
+        metricConversao.textContent = `${rate}%`;
+    }
 
     if (rowsCount === 0) {
         tbody.innerHTML = `<tr><td colspan="9" class="empty-state">Nenhum orçamento emitido.</td></tr>`;
@@ -1187,9 +1321,6 @@ function renderRecibos() {
         let viewsClass = 'text-secondary';
         if (views >= 5) { viewsIcon = '🔥 Quente'; viewsClass = 'text-danger'; }
         else if (views >= 2) { viewsIcon = '🌡️ Morno'; viewsClass = 'text-warning'; }
-        
-        const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
-        const publicUrl = `${baseUrl}recibo.html?id=${r.id}`;
         
         const row = document.createElement("tr");
         row.innerHTML = `
@@ -1259,11 +1390,13 @@ function openBudgetModal() {
     }
 
     renderOrcMaterialsTable();
+    updateLiveBudgetCalc();
     document.getElementById("modal-orcamento").classList.add("show");
 }
 
 function renderOrcMaterialsTable() {
     const tbody = document.querySelector("#orc-table-materiais tbody");
+    if (!tbody) return;
     tbody.innerHTML = "";
     state.orcMateriaisVinculados.forEach((m, idx) => {
         tbody.innerHTML += `
@@ -1271,11 +1404,12 @@ function renderOrcMaterialsTable() {
                 <td>${m.nome}</td>
                 <td>${m.quantidade}</td>
                 <td>${formatCurrency(m.preco)}</td>
-                <td><strong>${formatCurrency(m.total)}</strong></td>
-                <td><button type="button" class="btn btn-danger btn-sm" onclick="removeOrcMaterial(${idx})">&times;</button></td>
+                <td class="font-bold">${formatCurrency(m.total)}</td>
+                <td><button type="button" class="btn btn-sm btn-danger btn-icon" onclick="removeOrcMaterial(${idx})">&times;</button></td>
             </tr>
         `;
     });
+    updateLiveBudgetCalc();
 }
 
 function removeOrcMaterial(idx) {
@@ -2286,11 +2420,22 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // Escutadores para o cálculo do Orçamento Total em Tempo Real
+    ["orc-largura", "orc-altura", "orc-quantidade", "orc-margem", "orc-instalação", "orc-deslocamento"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener("input", updateLiveBudgetCalc);
+            el.addEventListener("change", updateLiveBudgetCalc);
+        }
+    });
+
     document.getElementById("orc-btn-calcular-ia").addEventListener("click", async () => {
         const largura = parseFloat(document.getElementById("orc-largura").value) || 1;
         const altura = parseFloat(document.getElementById("orc-altura").value) || 1;
         const quantidade = parseInt(document.getElementById("orc-quantidade").value, 10) || 1;
         const margem = parseFloat(document.getElementById("orc-margem").value) || 50;
+        const instalacao = document.getElementById("orc-instalação").value;
+        const deslocamento = parseFloat(document.getElementById("orc-deslocamento").value) || 0;
         const materiais = state.orcMateriaisVinculados;
 
         const section = document.getElementById("ai-calc-section");
@@ -2301,6 +2446,7 @@ document.addEventListener("DOMContentLoaded", () => {
         loader.style.display = "inline-block";
         resultDiv.innerHTML = "Calculando e analisando com a IA do Gemini...";
 
+        // Primeiro tenta com o Gemini
         const prompt = `Você é um especialista em orçamento e custos de Comunicação Visual.
 Calcule o preço de venda sugerido para uma placa/peça com as seguintes especificações:
 - Largura: ${largura} metros
@@ -2311,15 +2457,7 @@ Calcule o preço de venda sugerido para uma placa/peça com as seguintes especif
 ${JSON.stringify(materiais, null, 2)}
 
 Considere a área quadrada total da peça (${largura * altura}m² por peça). Considere uma perda padrão de 10% na matéria-prima.
-Calcule:
-1. Área Total do Serviço (largura * altura * quantidade)
-2. Custo Total de Matéria-Prima
-3. Custo estimado de Produção/Impressão/Acabamento (estime R$ 15,00 por m² de custo de impressão/mão de obra se não especificado)
-4. Custo Total Operacional (Matéria-prima + Produção)
-5. Preço Sugerido de Venda com base na margem de lucro desejada (Fórmula: Custo Total / (1 - margem/100))
-6. Lucro Bruto Estimado e a Margem Efetiva.
-
-Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos de código markdown ou texto extra, para que eu possa fazer o parse no JavaScript do ERP:
+Calcule e retorne EXATAMENTE no formato JSON a seguir:
 {
   "areaTotal": 0.00,
   "custoMaterial": 0.00,
@@ -2329,21 +2467,27 @@ Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos d
   "lucroEstimado": 0.00,
   "margemEfetiva": 0,
   "tempoProducaoDias": 1.5,
-  "explicacao": "Escreva aqui uma explicação detalhada e bonita passo a passo para o cliente e o vendedor entenderem o preço."
+  "explicacao": "Escreva aqui uma explicação detalhada e bonita para o cliente entender o valor."
 }`;
+
+        let res = null;
 
         try {
             const rawResponse = await callGeminiAPI(prompt);
-            loader.style.display = "none";
-            
             let cleanText = rawResponse.trim();
             if (cleanText.startsWith("```")) {
                 cleanText = cleanText.replace(/^```json/, "").replace(/```$/, "").trim();
             }
-            
-            const res = JSON.parse(cleanText);
-            
-            // Armazenar os valores calculados na sessão do modal para salvamento posterior
+            res = JSON.parse(cleanText);
+        } catch (e) {
+            console.warn("API Gemini indisponível ou limite de cota atingido. Usando motor de cálculo local:", e);
+            res = calculateLocalBudget(largura, altura, quantidade, margem, materiais, instalacao, deslocamento);
+            res.explicacao += " (Nota: Calculado via Motor Híbrido de Comunicação Visual enquanto a IA está em alta demanda).";
+        }
+
+        loader.style.display = "none";
+        
+        if (res) {
             document.getElementById("orc-btn-salvar").dataset.valCalculado = JSON.stringify(res);
 
             resultDiv.innerHTML = `
@@ -2370,10 +2514,6 @@ Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos d
                     <p style="margin-top:6px; color:#cbd5e1;">${res.explicacao}</p>
                 </div>
             `;
-        } catch (e) {
-            console.error(e);
-            loader.style.display = "none";
-            resultDiv.innerHTML = `<span class="text-danger">Erro ao processar orçamento com IA: ${e.message}. Você ainda pode preencher e salvar manualmente.</span>`;
         }
     });
 
@@ -2390,33 +2530,23 @@ Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos d
             return;
         }
 
-        let valores = {
-            areaTotal: largura * altura * quantidade,
-            custoMaterial: state.orcMateriaisVinculados.reduce((acc, c) => acc + c.total, 0),
-            custoProducao: (largura * altura * quantidade) * 15,
-            precoSugerido: 0,
-            custoTotal: 0,
-            lucroEstimado: 0
-        };
-
-        valores.custoTotal = valores.custoMaterial + valores.custoProducao;
-        const margem = parseFloat(document.getElementById("orc-margem").value) || 50;
-        const instalacao = document.getElementById("orc-instalação").value;
-        const deslocamento = parseFloat(document.getElementById("orc-deslocamento").value) || 0;
-        valores.precoSugerido = margem < 100 ? (valores.custoTotal / (1 - (margem / 100))) : valores.custoTotal * 3;
-        valores.precoSugerido += deslocamento;
-        if (instalacao === "metalprint") {
-            valores.precoSugerido += 150;
-        } else if (instalacao === "cliente") {
-            valores.precoSugerido += 0;
-        }
-        valores.lucroEstimado = valores.precoSugerido - valores.custoTotal;
+        let valores = calculateLocalBudget(
+            largura,
+            altura,
+            quantidade,
+            parseFloat(document.getElementById("orc-margem").value) || 50,
+            state.orcMateriaisVinculados,
+            document.getElementById("orc-instalação").value,
+            parseFloat(document.getElementById("orc-deslocamento").value) || 0
+        );
 
         const dataCalculada = document.getElementById("orc-btn-salvar").dataset.valCalculado;
         if (dataCalculada) {
-            const parsed = JSON.parse(dataCalculada);
-            valores.precoSugerido = parsed.precoSugerido;
-            valores.custoTotal = parsed.custoTotal;
+            try {
+                const parsed = JSON.parse(dataCalculada);
+                valores.precoSugerido = parsed.precoSugerido;
+                valores.custoTotal = parsed.custoTotal;
+            } catch(e) {}
         }
 
         const orcId = "orc_" + Date.now();
@@ -2437,7 +2567,6 @@ Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos d
             instalacao: document.getElementById("orc-instalação").value,
             deslocamento: parseFloat(document.getElementById("orc-deslocamento").value) || 0,
             status: "Pendente",
-            // Dados empresa para página pública
             companyName: state.companyName,
             companyCnpj: state.companyCnpj,
             visualizacoes: 0,
@@ -2448,9 +2577,8 @@ Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos d
         document.getElementById("modal-orcamento").classList.remove("show");
         document.getElementById("orc-btn-salvar").dataset.valCalculado = "";
         
-        // Mostrar link público rastreável
-        const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
-        const publicUrl = `${baseUrl}orcamento-publico.html?id=${orc.id}`;
+        // Gerar link público seguro com payload de backup
+        const publicUrl = buildPublicBudgetUrl(orc);
         
         const confirmed = confirm(`✅ Orçamento criado com sucesso!\n\nLink público rastreável (para enviar ao cliente):\n${publicUrl}\n\nDeseja abrir o orçamento agora?`);
         if (confirmed) {
@@ -2470,7 +2598,6 @@ Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos d
             rId = "receipt_" + Date.now();
         }
 
-        // Gerar número do recibo
         const reciboNum = `REC-${new Date().getFullYear()}-${String(state.recibos.length + 1001).padStart(4, '0')}`;
         
         const recibo = {
@@ -2484,7 +2611,6 @@ Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos d
             metodoPagamento: document.getElementById("recibo-pagamento").value,
             statusPagamento: document.getElementById("recibo-status-pagamento").value || "Aguardando pagamento",
             obs: document.getElementById("recibo-obs").value,
-            // Dados da empresa para a página pública
             companyName: state.companyName,
             companyCnpj: state.companyCnpj,
             visualizacoes: 0,
@@ -2494,9 +2620,8 @@ Você DEVE retornar a resposta EXATAMENTE no formato JSON a seguir, sem blocos d
         await dbSave("recibos", recibo);
         document.getElementById("modal-recibo").classList.remove("show");
         
-        // Mostrar link público
-        const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
-        const publicUrl = `${baseUrl}recibo.html?id=${recibo.id}`;
+        // Gerar link público seguro com payload de backup
+        const publicUrl = buildPublicReceiptUrl(recibo);
         
         const confirmed = confirm(`✅ Recibo salvo com sucesso!\n\nLink público rastreável gerado:\n${publicUrl}\n\nDeseja abrir o recibo agora para impressão?`);
         if (confirmed) {
@@ -2958,9 +3083,7 @@ window.app = {
     printReceipt: (id) => {
         const r = state.recibos.find(rec => rec.id === id);
         if (!r) { alert('Recibo não encontrado.'); return; }
-        // Abrir a página pública de recibo
-        const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
-        const publicUrl = `${baseUrl}recibo.html?id=${id}`;
+        const publicUrl = buildPublicReceiptUrl(r);
         window.open(publicUrl, '_blank');
     },
     deleteReceipt: (id) => {
@@ -2969,8 +3092,8 @@ window.app = {
         }
     },
     shareReceiptLink: (id) => {
-        const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
-        const publicUrl = `${baseUrl}recibo.html?id=${id}`;
+        const r = state.recibos.find(rec => rec.id === id);
+        const publicUrl = r ? buildPublicReceiptUrl(r) : `${window.location.origin}${window.location.pathname.replace('index.html', '')}recibo.html?id=${id}`;
         if (navigator.clipboard) {
             navigator.clipboard.writeText(publicUrl).then(() => {
                 alert('✅ Link copiado!\n\n' + publicUrl + '\n\nEnvie este link ao cliente para que ele possa visualizar o recibo. Cada abertura é registrada.');
@@ -2980,8 +3103,8 @@ window.app = {
         }
     },
     shareOrcamentoLink: (id) => {
-        const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
-        const publicUrl = `${baseUrl}orcamento-publico.html?id=${id}`;
+        const o = state.orcamentos.find(item => item.id === id);
+        const publicUrl = o ? buildPublicBudgetUrl(o) : `${window.location.origin}${window.location.pathname.replace('index.html', '')}orcamento-publico.html?id=${id}`;
         if (navigator.clipboard) {
             navigator.clipboard.writeText(publicUrl).then(() => {
                 alert('✅ Link copiado!\n\n' + publicUrl + '\n\nEnvie ao cliente. Cada abertura é registrada como interesse.');
